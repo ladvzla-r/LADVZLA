@@ -1,6 +1,8 @@
 import { useState, useRef, useCallback, useEffect } from "react";
 import { Avatar, AvatarImage, AvatarFallback } from "./components/ui/avatar";
 
+const API_BASE = import.meta.env.VITE_API_URL || "";
+
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 type View = "menu" | "tablas" | "jugadores" | "reglas" | "admin" | "torneo" | "historial";
@@ -103,9 +105,7 @@ interface RippleItem {
 
 // ─── Initial Data ─────────────────────────────────────────────────────────────
 
-const INITIAL_PLAYERS: Player[] = [
-  { name: "Zektro" }, { name: "NovaSky" }, { name: "Drakken" }, { name: "Pixelate" }, { name: "Lumix" }, { name: "Vortex" }, { name: "CrashWave" },
-];
+const INITIAL_PLAYERS: Player[] = [];
 
 const TOURNAMENTS: TournamentDef[] = [
   {
@@ -1533,7 +1533,7 @@ function JugadoresView({ players, history, onPlayers, onDeletePlayer, onBack }: 
       return;
     }
     try {
-      const res = await fetch('/api/players', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name }) });
+      const res = await fetch(`${API_BASE}/api/players`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name }) });
       if (!res.ok) throw new Error('api');
       const created = await res.json();
       onPlayers([...players, created]);
@@ -1550,7 +1550,7 @@ function JugadoresView({ players, history, onPlayers, onDeletePlayer, onBack }: 
     if (!currentPlayer) return;
     if (currentPlayer.id) {
       try {
-        const res = await fetch(`/api/players/${currentPlayer.id}`, {
+        const res = await fetch(`${API_BASE}/api/players/${currentPlayer.id}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ name: currentPlayer.name, avatar }),
@@ -1586,7 +1586,7 @@ function JugadoresView({ players, history, onPlayers, onDeletePlayer, onBack }: 
     const updatedPlayers = players.map((p) => p.name === name ? { ...p, name: trimmed } : p);
     try {
       if (currentPlayer?.id) {
-        const res = await fetch(`/api/players/${currentPlayer.id}`, {
+        const res = await fetch(`${API_BASE}/api/players/${currentPlayer.id}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ name: trimmed, avatar: currentPlayer.avatar }),
@@ -2005,13 +2005,21 @@ function AdminView({ players, onPlayers, onDeletePlayer, onBack }: { players: Pl
   const addPlayer = async () => {
     const name = newName.trim();
     if (!name) return;
-    if (players.some((p) => p.name.toLowerCase() === name.toLowerCase())) { setNameError("Ese jugador ya existe."); return; }
+    if (players.some((p) => p.name.toLowerCase() === name.toLowerCase())) {
+      setNameError("Ese jugador ya existe.");
+      return;
+    }
     try {
-      const res = await fetch('/api/players', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name }) });
+      const res = await fetch(`${API_BASE}/api/players`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name }),
+      });
       if (!res.ok) throw new Error('api');
       const created = await res.json();
       onPlayers([...players, created]);
-      setNewName(""); setNameError("");
+      setNewName("");
+      setNameError("");
     } catch (err) {
       console.error(err);
       setNameError('No se pudo agregar en el servidor.');
@@ -2812,7 +2820,7 @@ function TorneoView({ players, history, onBack, onSavePlayers, onSaveTournament 
     };
 
     try {
-      const res = await fetch('/api/tournaments', {
+      const res = await fetch(`${API_BASE}/api/tournaments`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(record),
@@ -3239,10 +3247,10 @@ export default function App() {
     const player = players.find((p) => p.name === name);
     try {
       if (player?.id) {
-        const res = await fetch(`/api/players/${player.id}`, { method: 'DELETE' });
+        const res = await fetch(`${API_BASE}/api/players/${player.id}`, { method: 'DELETE' });
         if (!res.ok) throw new Error('delete failed');
       } else {
-        const res = await fetch(`/api/players?name=${encodeURIComponent(name)}`, { method: 'DELETE' });
+        const res = await fetch(`${API_BASE}/api/players?name=${encodeURIComponent(name)}`, { method: 'DELETE' });
         if (!res.ok) throw new Error('delete failed');
       }
     } catch (err) {
@@ -3286,7 +3294,7 @@ export default function App() {
     // Load players from API (fallback to localStorage if API unavailable)
     (async () => {
       try {
-        const res = await fetch('/api/players');
+        const res = await fetch(`${API_BASE}/api/players`);
         if (res.ok) {
           const list = await res.json();
           setPlayers(Array.isArray(list) ? list : []);
@@ -3308,7 +3316,7 @@ export default function App() {
 
     (async () => {
       try {
-        const res = await fetch('/api/tournaments');
+        const res = await fetch(`${API_BASE}/api/tournaments`);
         if (res.ok) {
           const list = await res.json();
           if (Array.isArray(list)) setTournamentHistory(list);
