@@ -24,7 +24,20 @@ const __dirname = path.dirname(__filename);
       await pool.query(sql);
     }
 
-    console.log('All migrations applied successfully');
+    const seedsDir = path.resolve(__dirname, '../db/seeds');
+    if (fs.existsSync(seedsDir)) {
+      const seedFiles = fs.readdirSync(seedsDir)
+        .filter((file) => file.endsWith('.sql'))
+        .sort();
+      for (const file of seedFiles) {
+        const sqlPath = path.resolve(seedsDir, file);
+        const sql = fs.readFileSync(sqlPath, 'utf8');
+        console.log('Applying seed...', sqlPath);
+        await pool.query(sql);
+      }
+    }
+
+    console.log('All migrations and seeds applied successfully');
     await pool.end();
     process.exit(0);
   } catch (err) {

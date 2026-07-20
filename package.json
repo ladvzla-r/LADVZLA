@@ -3,9 +3,11 @@
   "private": true,
   "version": "0.0.1",
   "type": "module",
+  "packageManager": "pnpm@8",
   "scripts": {
     "build": "vite build",
     "start": "node server/index.js",
+    "migrate": "node server/run_migration.js",
     "dev": "vite",
     "dev:server": "node server/index.js"
   },

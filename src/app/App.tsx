@@ -2450,6 +2450,7 @@ function TorneoView({ players, history, onBack, onSavePlayers, onSaveTournament 
   const [edition, setEdition] = useState(1);
   const [managedBy, setManagedBy] = useState("Rikardo");
   const [savedTournament, setSavedTournament] = useState(false);
+  const [saveError, setSaveError] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
   const [adminPin, setAdminPin] = useState("");
   const [adminPinError, setAdminPinError] = useState(false);
@@ -2825,27 +2826,30 @@ function TorneoView({ players, history, onBack, onSavePlayers, onSaveTournament 
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(record),
       });
-      if (!res.ok) throw new Error('api');
+      if (!res.ok) {
+        const errorText = await res.text();
+        throw new Error(`API error ${res.status}: ${errorText}`);
+      }
       const savedRecord = await res.json();
       onSaveTournament(savedRecord);
+      const updated = players.map((player) => {
+        const isParticipant = selectedPlayers.includes(player.name);
+        const isChampion = championTeam?.players.includes(player.name) || player.name === champion;
+        const isMvp = mvpPlayer === player.name;
+        return {
+          ...player,
+          totalKills: (player.totalKills ?? 0) + (killsByPlayer[player.name] ?? 0),
+          participations: (player.participations ?? 0) + (isParticipant ? 1 : 0),
+          tournamentsWon: (player.tournamentsWon ?? 0) + (isChampion ? 1 : 0),
+          mvps: (player.mvps ?? 0) + (isMvp ? 1 : 0),
+        };
+      });
+      onSavePlayers(updated);
+      setSavedTournament(true);
     } catch (err) {
       console.error(err);
-      onSaveTournament(record);
+      setSaveError(true);
     }
-    const updated = players.map((player) => {
-      const isParticipant = selectedPlayers.includes(player.name);
-      const isChampion = championTeam?.players.includes(player.name) || player.name === champion;
-      const isMvp = mvpPlayer === player.name;
-      return {
-        ...player,
-        totalKills: (player.totalKills ?? 0) + (killsByPlayer[player.name] ?? 0),
-        participations: (player.participations ?? 0) + (isParticipant ? 1 : 0),
-        tournamentsWon: (player.tournamentsWon ?? 0) + (isChampion ? 1 : 0),
-        mvps: (player.mvps ?? 0) + (isMvp ? 1 : 0),
-      };
-    });
-    onSavePlayers(updated);
-    setSavedTournament(true);
   };
 
   useEffect(() => {
