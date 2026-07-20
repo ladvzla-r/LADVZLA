@@ -682,6 +682,7 @@ function buildGameStats(gameId: string, players: Player[], history: TournamentRe
       stats[player.name].mvps += rec.mvps;
       stats[player.name].participations += rec.participations;
       for (const key of extraKeys) {
+        if (key === "kills") continue;
         const value = (rec as Record<string, number | undefined>)[key];
         if (typeof value === "number") {
           stats[player.name][key] = (stats[player.name][key] ?? 0) + value;
@@ -1049,6 +1050,12 @@ function HistorialView({ tournaments, history, onBack, onDeleteTournament, onUpd
     setEditingRecordId(null);
     setEditError("");
   };
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const saved = window.localStorage.getItem(ADMIN_SESSION_KEY);
+    if (saved) setIsAdmin(true);
+  }, []);
 
   const formatDate = (dateString: string) => {
     try {
@@ -3277,8 +3284,16 @@ export default function App() {
     setTournamentHistory((prev) => prev.filter((record) => !playerAppearsIn(record)));
   };
 
-  const handleDeleteTournament = (id: string) => {
-    setTournamentHistory((prev) => prev.filter((record) => record.id !== id));
+  const handleDeleteTournament = async (id: string) => {
+    try {
+      const res = await fetch(`${API_BASE}/api/tournaments/${encodeURIComponent(id)}`, { method: 'DELETE' });
+      if (!res.ok) {
+        throw new Error('delete failed');
+      }
+      setTournamentHistory((prev) => prev.filter((record) => record.id !== id));
+    } catch (err) {
+      console.error('Failed to delete tournament from API', err);
+    }
   };
 
   const handleUpdateTournament = (updatedRecord: TournamentRecord) => {

@@ -176,6 +176,42 @@ app.post('/api/tournaments', async (req, res) => {
   }
 });
 
+app.delete('/api/tournaments/:id', async (req, res) => {
+  const id = String(req.params.id || '').trim();
+  if (!id) return res.status(400).json({ error: 'id required' });
+
+  try {
+    let tournamentId = null;
+
+    const tournamentRes = await pool.query(
+      'SELECT id FROM tournaments WHERE id::text = $1 LIMIT 1',
+      [id]
+    );
+
+    if (tournamentRes.rows.length) {
+      tournamentId = tournamentRes.rows[0].id;
+    } else {
+      const recordRes = await pool.query(
+        'SELECT tournament_id FROM tournament_records WHERE record->>\'id\' = $1 LIMIT 1',
+        [id]
+      );
+      if (recordRes.rows.length) {
+        tournamentId = recordRes.rows[0].tournament_id;
+      }
+    }
+
+    if (!tournamentId) {
+      return res.status(404).json({ error: 'not found' });
+    }
+
+    await pool.query('DELETE FROM tournaments WHERE id = $1', [tournamentId]);
+    res.status(204).end();
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'failed' });
+  }
+});
+
 app.get('*', (req, res) => {
   res.sendFile(path.join(process.cwd(), 'dist', 'index.html'));
 });
