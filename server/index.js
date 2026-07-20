@@ -1,11 +1,14 @@
 import express from 'express';
 import cors from 'cors';
 import pkg from 'pg';
+import path from 'path';
+
 const { Pool } = pkg;
 
 const app = express();
 app.use(cors());
 app.use(express.json({ limit: '5mb' }));
+app.use(express.static(path.join(process.cwd(), 'dist')));
 
 const pool = new Pool({ connectionString: process.env.DATABASE_URL || 'postgres://postgres:postgres@localhost:5432/ladvzla' });
 
@@ -171,6 +174,10 @@ app.post('/api/tournaments', async (req, res) => {
     console.error(err);
     res.status(500).json({ error: 'failed' });
   }
+});
+
+app.get('*', (req, res) => {
+  res.sendFile(path.join(process.cwd(), 'dist', 'index.html'));
 });
 
 const port = process.env.PORT || 5175;
