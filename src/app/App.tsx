@@ -276,11 +276,66 @@ const TOURNAMENTS: TournamentDef[] = [
       { player: "Pixelate",  w: 5,  l: 17, streak: -5, mvp: 0, tournamentsWon: 0, points: 11, assists: 4, blocks: 3 },
     ],
     rules: {
-      format: "Liguilla + Eliminación",
-      matchFormat: "Partido a 25 puntos · Final mejor de 5",
-      scoring: "Victoria: W · Derrota: L · Empate de W se define por PF/PA",
-      advancement: "Top 4 avanzan. Semis: 1°vs4°, 2°vs3°. Final mejor de 5.",
-      extra: "Se posiciona por W/L; si hay empate de W se toma en cuenta los puntos a favor y en contra.",
+      format: "Liguilla ida y vuelta + Final Mejor de 3",
+      matchFormat: "Partido ida y vuelta dúos vs dúos; final mejor de 3 sets",
+      scoring: "Victoria: W · Derrota: L · Diferencia de puntos para desempate",
+      advancement: "Clasifican los mejores dúos según la liguilla; la final determina el campeón al mejor de 3.",
+      extra: "Ventaja de saque en la final para quien haya finalizado primero la liga; reglas de fairplay y sanciones aplican.",
+      sections: [
+        {
+          title: "Fase de liga",
+          lines: [
+            "Partido ida y vuelta dúos vs dúos.",
+            "En caso de empate, se define por diferencia de puntos.",
+            "En caso de empate en puntos se define en un duelo de 2do vs 3ero.",
+          ],
+        },
+        {
+          title: "Fase final",
+          lines: [
+            "Final al mejor de 3 sets para determinar el campeón.",
+            "Ventaja de saques en el 1er y 3er duelo (solo si se juegan) para quien finalizó primero la liga.",
+          ],
+        },
+        {
+          title: "Reglas básicas",
+          lines: [
+            "Equipos decide la ruleta.",
+            "En liga solo puedes optar a un personaje de tu roster.",
+            "Enfrentamientos decide la ruleta.",
+            "No se puede repetir dúo en 3 torneos seguidos.",
+            "No se pueden hacer puntos con un rival afk.",
+            "No se puede abandonar la partida.",
+            "Entrar en un duelo máximo 5 minutos; fuera de ahí sanción.",
+            "Cada rival tendrá ventaja de saque una vez en liguilla.",
+            "Si el juego te da el saque y no corresponde, entrega el balón al rival.",
+            "En fase final puedes cambiar 1 vez tu personaje.",
+            "Si el rival no toma el balón en fairplay, no tiene derecho a pedir el punto.",
+            "No se cambia el personaje durante la fase (salvo excepción permitida).",
+            "Diferencia de 18 puntos, capote automático.",
+          ],
+        },
+        {
+          title: "Sanciones",
+          lines: [
+            "Impuntualidad: entrega 2 puntos al rival y castigo de habilidad por 10 puntos.",
+            "Infringir una regla: entrega 6 puntos al rival.",
+            "Infringir dos reglas: entrega 10 puntos al rival y restricción de habilidad.",
+            "Infringir tres o más reglas: pierde el duelo automáticamente.",
+            "Cada infracción puede ser revisada y corregida por el VAR.",
+          ],
+        },
+        {
+          title: "Títulos individuales",
+          lines: [
+            "MVP del Torneo: Decidido por votación de los participantes.",
+            "King of the Court: Mejor Asistidor.",
+            "King of the Wall: Mejor Bloqueador.",
+            "King of the Air: Mejor Atacante (Spiker).",
+            "King of the Line: Mejor Sacador.",
+          ],
+        },
+      ],
     },
   },
   {
