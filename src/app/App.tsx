@@ -80,6 +80,7 @@ type TournamentRecord = {
   champion: string;
   runnerUp?: string | null;
   mvp: string | null;
+  bestServer?: string | null;
   kills: Record<string, number>;
   playerStats?: Record<string, TournamentPlayerStats>;
   liguillaResults?: Record<string, string>;
@@ -649,6 +650,20 @@ function computeVolleyStandings(
   return Object.entries(s)
     .map(([player, data]) => ({ player, ...data, played: data.w + data.l, diff: data.pf - data.pa }))
     .sort((a, b) => b.w - a.w || b.diff - a.diff || b.pf - a.pf || a.player.localeCompare(b.player));
+}
+
+function computeVolleyTrophyWinner(record: TournamentRecord, stat: "assists" | "blocks" | "points") {
+  const players = record.participants || [];
+  let winner = "N/A";
+  let bestValue = -Infinity;
+  for (const player of players) {
+    const value = record.playerStats?.[player]?.[stat] ?? 0;
+    if (value > bestValue) {
+      bestValue = value;
+      winner = player;
+    }
+  }
+  return winner;
 }
 
 function computeStandings(
@@ -1305,19 +1320,31 @@ function HistorialView({ tournaments, history, onBack, onDeleteTournament, onUpd
                                         </div>
                                       </div>
                                     ) : record.gameId === "volley" ? (
-                                      <div className="rounded-2xl p-4" style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)", minHeight: "160px" }}>
-                                        <p className="text-[10px] uppercase mb-2" style={{ color: "#6b6b88", fontFamily: "JetBrains Mono,monospace" }}>Volley</p>
-                                        <div className="text-sm space-y-3 max-h-52 overflow-y-auto" style={{ color: "#c8c8d8", fontFamily: "JetBrains Mono,monospace" }}>
-                                          {record.participants.map((player) => {
-                                            const stats = record.playerStats?.[player];
-                                            return (
-                                              <div key={player} className="rounded-2xl p-3" style={{ background: "rgba(255,255,255,0.02)" }}>
-                                                <div className="flex justify-between gap-2"><span>{player}</span><span>{stats?.points ?? 0} pts</span></div>
-                                                <div className="flex justify-between gap-2"><span className="text-[11px] text-[#a0a0b8]">Asistencias</span><span>{stats?.assists ?? 0}</span></div>
-                                                <div className="flex justify-between gap-2"><span className="text-[11px] text-[#a0a0b8]">Bloqueos</span><span>{stats?.blocks ?? 0}</span></div>
-                                              </div>
-                                            );
-                                          })}
+                                      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                                        <div className="rounded-2xl p-4" style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)" }}>
+                                          <p className="text-[10px] uppercase mb-2" style={{ color: "#6b6b88", fontFamily: "JetBrains Mono,monospace" }}>Premios individuales</p>
+                                          <div className="space-y-2 text-sm" style={{ color: "#c8c8d8", fontFamily: "JetBrains Mono,monospace" }}>
+                                            <div className="flex justify-between gap-2"><span>MVP</span><span className="font-semibold">{record.mvp ?? "N/A"}</span></div>
+                                            <div className="flex justify-between gap-2"><span>Mejor sacador</span><span className="font-semibold">{record.bestServer ?? "N/A"}</span></div>
+                                            <div className="flex justify-between gap-2"><span>King of the Air</span><span className="font-semibold">{computeVolleyTrophyWinner(record, "points")}</span></div>
+                                            <div className="flex justify-between gap-2"><span>King of the Court</span><span className="font-semibold">{computeVolleyTrophyWinner(record, "assists")}</span></div>
+                                            <div className="flex justify-between gap-2"><span>King of the Wall</span><span className="font-semibold">{computeVolleyTrophyWinner(record, "blocks")}</span></div>
+                                          </div>
+                                        </div>
+                                        <div className="rounded-2xl p-4" style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)", minHeight: "160px" }}>
+                                          <p className="text-[10px] uppercase mb-2" style={{ color: "#6b6b88", fontFamily: "JetBrains Mono,monospace" }}>Estadísticas de Volley</p>
+                                          <div className="text-sm space-y-3 max-h-52 overflow-y-auto" style={{ color: "#c8c8d8", fontFamily: "JetBrains Mono,monospace" }}>
+                                            {record.participants.map((player) => {
+                                              const stats = record.playerStats?.[player];
+                                              return (
+                                                <div key={player} className="rounded-2xl p-3" style={{ background: "rgba(255,255,255,0.02)" }}>
+                                                  <div className="flex justify-between gap-2"><span>{player}</span><span>{stats?.points ?? 0} pts</span></div>
+                                                  <div className="flex justify-between gap-2"><span className="text-[11px] text-[#a0a0b8]">Asistencias</span><span>{stats?.assists ?? 0}</span></div>
+                                                  <div className="flex justify-between gap-2"><span className="text-[11px] text-[#a0a0b8]">Bloqueos</span><span>{stats?.blocks ?? 0}</span></div>
+                                                </div>
+                                              );
+                                            })}
+                                          </div>
                                         </div>
                                       </div>
                                     ) : (
@@ -1596,11 +1623,25 @@ function JugadoresView({ players, history, onPlayers, onDeletePlayer, onBack }: 
     return { games, totalW, totalL, totalMVP, totalTitles, rate, bestGame };
   };
 
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    const saved = window.localStorage.getItem(ADMIN_SESSION_KEY);
-    if (saved) setIsAdmin(true);
-  }, []);
+  const computeVolleyTitles = (playerName: string) => {
+    const counts = {
+      mvp: 0,
+      bestServer: 0,
+      kingOfTheAir: 0,
+      kingOfTheCourt: 0,
+      kingOfTheWall: 0,
+    };
+
+    history.filter((record) => record.gameId === "volley").forEach((record) => {
+      if (record.mvp === playerName) counts.mvp += 1;
+      if (record.bestServer === playerName) counts.bestServer += 1;
+      if (computeVolleyTrophyWinner(record, "points") === playerName) counts.kingOfTheAir += 1;
+      if (computeVolleyTrophyWinner(record, "assists") === playerName) counts.kingOfTheCourt += 1;
+      if (computeVolleyTrophyWinner(record, "blocks") === playerName) counts.kingOfTheWall += 1;
+    });
+
+    return counts;
+  };
 
   const tryPin = () => {
     const adminName = ADMIN_PINS[pin];
@@ -1608,6 +1649,7 @@ function JugadoresView({ players, history, onPlayers, onDeletePlayer, onBack }: 
       setIsAdmin(true);
       if (typeof window !== "undefined") window.localStorage.setItem(ADMIN_SESSION_KEY, adminName);
       setPinError(false);
+      setPin("");
     } else {
       setPinError(true);
       setPin("");
@@ -1765,6 +1807,29 @@ function JugadoresView({ players, history, onPlayers, onDeletePlayer, onBack }: 
 
             <div className="px-8 py-6 flex flex-col gap-4">
               <p className="text-xs font-semibold tracking-widest" style={{ color: "#6b6b88", fontFamily: "JetBrains Mono,monospace" }}>POR JUEGO</p>
+              {(() => {
+                const volleyTitles = computeVolleyTitles(selected);
+                const hasVolleyTitles = Object.values(volleyTitles).some((value) => value > 0);
+                if (!hasVolleyTitles) return null;
+                return (
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    {[
+                      { label: "MVP", value: volleyTitles.mvp },
+                      { label: "Mejor sacador", value: volleyTitles.bestServer },
+                      { label: "King Of The Air", value: volleyTitles.kingOfTheAir },
+                      { label: "King Of The Court", value: volleyTitles.kingOfTheCourt },
+                      { label: "King Of The Wall", value: volleyTitles.kingOfTheWall },
+                    ]
+                      .filter((item) => item.value > 0)
+                      .map((item) => (
+                        <div key={item.label} className="rounded-2xl p-4" style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)" }}>
+                          <p className="text-[10px] uppercase mb-2" style={{ color: "#6b6b88", fontFamily: "JetBrains Mono,monospace" }}>{item.label}</p>
+                          <p className="text-lg font-semibold" style={{ color: "#e8e8f0", fontFamily: "'Barlow Condensed', sans-serif" }}>{item.value}</p>
+                        </div>
+                      ))}
+                  </div>
+                );
+              })()}
               {d.games.map((g) => {
                 const rate = wr(g.w, g.l);
                 return (
@@ -2350,8 +2415,10 @@ function BracketView({ bracket, setBracket, standings, color, glow, border, isRi
         }).length;
       const homeWins = countValidWins(true);
       const awayWins = countValidWins(false);
-      if (isRivals || isVolley) {
+      if (isRivals) {
         next.champion = homeWins >= 3 ? homePlayer : awayWins >= 3 ? awayPlayer : null;
+      } else if (isVolley) {
+        next.champion = homeWins >= 2 ? homePlayer : awayWins >= 2 ? awayPlayer : null;
       } else if (isClashRoyale) {
         next.champion = homeWins > awayWins ? homePlayer : awayWins > homeWins ? awayPlayer : null;
       } else if (isAzure) {
@@ -2443,14 +2510,14 @@ function BracketView({ bracket, setBracket, standings, color, glow, border, isRi
           <div className="flex flex-col gap-6 items-center">
             <p className="text-[10px] tracking-widest mb-2" style={{ color: "#6b6b88", fontFamily: "JetBrains Mono,monospace" }}>FINAL</p>
             <MatchCard home={bracket.final[0].player} away={bracket.final[1].player} color={color} onWin={finalEnabled ? (w) => handleWin("final", w) : undefined} />
-            {(isRivals || isAzure || isClashRoyale) && (
-              <div className="text-center text-xs text-[#a0a0b8]" style={{ fontFamily: "JetBrains Mono,monospace" }}>{isAzure ? "Ida y vuelta" : isClashRoyale ? "Marcador directo" : "Mejor de 5"}</div>
+            {(isRivals || isAzure || isVolley || isClashRoyale) && (
+              <div className="text-center text-xs text-[#a0a0b8]" style={{ fontFamily: "JetBrains Mono,monospace" }}>{isAzure ? "Ida y vuelta" : isVolley ? "Mejor de 3" : isClashRoyale ? "Marcador directo" : "Mejor de 5"}</div>
             )}
-            {(isRivals || isAzure || isClashRoyale) && (
+            {(isRivals || isAzure || isVolley || isClashRoyale) && (
               <div className="w-full max-w-sm rounded-2xl p-3" style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)" }}>
                 <div className="flex items-center justify-between mb-3 text-[11px] font-semibold" style={{ color: "#c8c8d8", fontFamily: "JetBrains Mono,monospace" }}>
                   <span>{homePlayer ? `${homePlayer} (${isClashRoyale ? clashHomeScore : homeWins})` : "Equipo A"}</span>
-                  <span>{isAzure ? "Ida/Vuelta + extra" : isClashRoyale ? "Marcador directo" : "Mejor de 5"}</span>
+                  <span>{isAzure ? "Ida/Vuelta + extra" : isVolley ? "Mejor de 3" : isClashRoyale ? "Marcador directo" : "Mejor de 5"}</span>
                   <span>{awayPlayer ? `${awayPlayer} (${isClashRoyale ? clashAwayScore : awayWins})` : "Equipo B"}</span>
                 </div>
                 <div className="space-y-2">
@@ -2536,6 +2603,7 @@ function TorneoView({ players, history, onBack, onSavePlayers, onSaveTournament 
   const [volleyBlocksByPlayer, setVolleyBlocksByPlayer] = useState<Record<string, number>>(() => Object.fromEntries(players.map((p) => [p.name, 0])));
   const [showVolleyPanel, setShowVolleyPanel] = useState(true);
   const [mvpPlayer, setMvpPlayer] = useState<string | null>(null);
+  const [bestServer, setBestServer] = useState<string | null>(null);
   const [edition, setEdition] = useState(1);
   const [managedBy, setManagedBy] = useState("Rikardo");
   const [savedTournament, setSavedTournament] = useState(false);
@@ -2705,18 +2773,33 @@ function TorneoView({ players, history, onBack, onSavePlayers, onSaveTournament 
             <p className="text-xs font-semibold tracking-[0.24em] uppercase" style={{ color: "#bef264", fontFamily: "JetBrains Mono,monospace" }}>Volley — Pts · Asistencias · Bloqueos · MVP</p>
             <button onClick={() => setShowVolleyPanel(false)} className="text-[11px] font-semibold uppercase rounded-full px-3 py-1" style={{ background: "rgba(255,255,255,0.06)", color: "#a0a0b8", fontFamily: "JetBrains Mono,monospace" }}>Ocultar</button>
           </div>
-          <div className="mb-4">
-            <label className="block text-[10px] uppercase tracking-[0.22em] mb-2" style={{ color: "#6b6b88", fontFamily: "JetBrains Mono,monospace" }}>Seleccionar MVP</label>
-            <select
-              value={mvpPlayer ?? ""}
-              onChange={(e) => setMvpPlayer(e.target.value || null)}
-              className="w-full rounded-2xl border border-white/10 bg-[#11101f] px-3 py-2 text-sm text-white"
-              style={{ fontFamily: "JetBrains Mono,monospace" }}>
-              <option value="">-- Ninguno --</option>
-              {selectedPlayers.map((player) => (
-                <option key={player} value={player}>{player}</option>
-              ))}
-            </select>
+          <div className="grid gap-3 mb-4">
+            <div>
+              <label className="block text-[10px] uppercase tracking-[0.22em] mb-2" style={{ color: "#6b6b88", fontFamily: "JetBrains Mono,monospace" }}>Seleccionar MVP</label>
+              <select
+                value={mvpPlayer ?? ""}
+                onChange={(e) => setMvpPlayer(e.target.value || null)}
+                className="w-full rounded-2xl border border-white/10 bg-[#11101f] px-3 py-2 text-sm text-white"
+                style={{ fontFamily: "JetBrains Mono,monospace" }}>
+                <option value="">-- Ninguno --</option>
+                {selectedPlayers.map((player) => (
+                  <option key={player} value={player}>{player}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="block text-[10px] uppercase tracking-[0.22em] mb-2" style={{ color: "#6b6b88", fontFamily: "JetBrains Mono,monospace" }}>Seleccionar mejor sacador</label>
+              <select
+                value={bestServer ?? ""}
+                onChange={(e) => setBestServer(e.target.value || null)}
+                className="w-full rounded-2xl border border-white/10 bg-[#11101f] px-3 py-2 text-sm text-white"
+                style={{ fontFamily: "JetBrains Mono,monospace" }}>
+                <option value="">-- Ninguno --</option>
+                {selectedPlayers.map((player) => (
+                  <option key={player} value={player}>{player}</option>
+                ))}
+              </select>
+            </div>
           </div>
           <div className="space-y-3" style={{ maxHeight: "calc(100vh - 260px)", overflowY: "auto" }}>
             {selectedPlayers.map((player) => (
@@ -2757,7 +2840,7 @@ function TorneoView({ players, history, onBack, onSavePlayers, onSaveTournament 
     if (isRivals || isVolley) {
       const top2 = standings.slice(0, 2).map((s) => s.player);
       const [s1, s2] = top2;
-      setBracket({ sf1: [{ player: null }, { player: null }], sf2: [{ player: null }, { player: null }], final: [{ player: s1 }, { player: s2 }], third: [{ player: null }, { player: null }], finalSeries: Array.from({ length: 5 }, () => ({ home: null, away: null })), champion: null });
+      setBracket({ sf1: [{ player: null }, { player: null }], sf2: [{ player: null }, { player: null }], final: [{ player: s1 }, { player: s2 }], third: [{ player: null }, { player: null }], finalSeries: Array.from({ length: isVolley ? 3 : 5 }, () => ({ home: null, away: null })), champion: null });
     } else if (isAzure) {
       const top2 = standings.slice(0, 2).map((s) => s.player);
       const [s1, s2] = top2;
@@ -2900,6 +2983,7 @@ function TorneoView({ players, history, onBack, onSavePlayers, onSaveTournament 
       champion,
       runnerUp,
       mvp: mvpPlayer,
+      bestServer,
       playerStats: computeRecordPlayerStats(),
       teamScores: isTeamSport ? teamScores : undefined,
       azureCharacters: isAzure ? azureAssignments : undefined,
@@ -2908,7 +2992,6 @@ function TorneoView({ players, history, onBack, onSavePlayers, onSaveTournament 
       edition: Number.isFinite(edition) && edition > 0 ? edition : 1,
       managedBy: (typeof window !== "undefined" && window.localStorage.getItem(ADMIN_SESSION_KEY)) || managedBy.trim() || "Rikardo",
     };
-
     try {
       const res = await fetch(`${API_BASE}/api/tournaments`, {
         method: 'POST',
