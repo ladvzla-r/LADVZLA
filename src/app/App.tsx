@@ -1051,12 +1051,6 @@ function HistorialView({ tournaments, history, onBack, onDeleteTournament, onUpd
     setEditError("");
   };
 
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    const saved = window.localStorage.getItem(ADMIN_SESSION_KEY);
-    if (saved) setIsAdmin(true);
-  }, []);
-
   const formatDate = (dateString: string) => {
     try {
       return new Date(dateString).toLocaleDateString("es-ES", { day: "2-digit", month: "short", year: "numeric" });
