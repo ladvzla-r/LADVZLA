@@ -3250,9 +3250,9 @@ function TorneoView({ players, history, onBack, onSavePlayers, onSaveTournament 
                   ))}
                 </tbody>
               </table>
-              {format === "liguilla+elim" && standings.length >= (isRivals || isAzure ? 2 : 4) && (
+              {format === "liguilla+elim" && standings.length >= (isRivals || isAzure || isVolley ? 2 : 4) && (
                 <div className="px-5 py-3" style={{ borderTop: "1px solid rgba(255,255,255,0.05)" }}>
-                  <p className="text-[10px]" style={{ color: "#6b6b88", fontFamily: "JetBrains Mono,monospace" }}>{isRivals || isAzure ? "↑ Top 2 avanzan a final" : "↑ Top 4 avanzan a eliminación"}</p>
+                  <p className="text-[10px]" style={{ color: "#6b6b88", fontFamily: "JetBrains Mono,monospace" }}>{isRivals || isAzure || isVolley ? "↑ Top 2 avanzan a final" : "↑ Top 4 avanzan a eliminación"}</p>
                 </div>
               )}
             </div>
@@ -3330,7 +3330,7 @@ function TorneoView({ players, history, onBack, onSavePlayers, onSaveTournament 
           {isAzure && renderAzurePanel()}
           {game?.id === "volley" && renderVolleyPanel()}
 
-          {format === "liguilla+elim" && standings.length >= (isRivals || isAzure ? 2 : 4) && (
+          {format === "liguilla+elim" && standings.length >= (isRivals || isAzure || isVolley ? 2 : 4) && rounds.length > 0 && (
             <div className="flex flex-col gap-4">
               <button onClick={allPlayed ? advanceToBracket : undefined}
                 className="py-4 rounded-2xl text-center font-bold"
