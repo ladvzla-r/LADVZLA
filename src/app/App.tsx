@@ -1258,7 +1258,7 @@ function HistorialView({ tournaments, history, onBack, onDeleteTournament, onUpd
                         <div className={`transition-all duration-300 overflow-hidden ${expanded ? "max-h-[1200px]" : "max-h-0"}`}>
                           {expanded && (
                             <div className="space-y-4">
-                              <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
+                              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                                 {record.gameId === "clashroyale" ? (
                                   <>
                                     <div className="rounded-2xl p-4" style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)" }}>
@@ -1285,7 +1285,7 @@ function HistorialView({ tournaments, history, onBack, onDeleteTournament, onUpd
                                       <p className="text-[10px] uppercase mb-2" style={{ color: "#6b6b88", fontFamily: "JetBrains Mono,monospace" }}>Participantes</p>
                                       <div className="text-sm" style={{ color: "#c8c8d8", fontFamily: "JetBrains Mono,monospace" }}>{record.participants.join(" · ")}</div>
                                     </div>
-                                    <div className="rounded-2xl p-4" style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)", minHeight: "160px" }}>
+                                    <div className="lg:col-span-2 rounded-2xl p-4" style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)", minHeight: "160px" }}>
                                       <p className="text-[10px] uppercase mb-2" style={{ color: "#6b6b88", fontFamily: "JetBrains Mono,monospace" }}>Victorias</p>
                                       <div className="text-sm space-y-2 max-h-52 overflow-y-auto" style={{ color: "#c8c8d8", fontFamily: "JetBrains Mono,monospace" }}>
                                         {Object.entries(record.playerStats || {}).map(([player, stats]) => (
@@ -1300,12 +1300,12 @@ function HistorialView({ tournaments, history, onBack, onDeleteTournament, onUpd
                                       <p className="text-[10px] uppercase mb-2" style={{ color: "#6b6b88", fontFamily: "JetBrains Mono,monospace" }}>MVP</p>
                                       <p className="text-sm font-semibold" style={{ color: "#fcd34d", fontFamily: "'Barlow Condensed', sans-serif" }}>{record.mvp ?? "N/A"}</p>
                                     </div>
-                                    <div className="lg:col-span-2 rounded-2xl p-4" style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)" }}>
+                                    <div className="rounded-2xl p-4" style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)" }}>
                                       <p className="text-[10px] uppercase mb-2" style={{ color: "#6b6b88", fontFamily: "JetBrains Mono,monospace" }}>Participantes</p>
                                       <div className="text-sm" style={{ color: "#c8c8d8", fontFamily: "JetBrains Mono,monospace" }}>{record.participants.join(" · ")}</div>
                                     </div>
                                     {record.gameId === "azure" ? (
-                                      <div className="rounded-2xl p-4" style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)", minHeight: "160px" }}>
+                                      <div className="lg:col-span-2 rounded-2xl p-4" style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)", minHeight: "160px" }}>
                                         <p className="text-[10px] uppercase mb-2" style={{ color: "#6b6b88", fontFamily: "JetBrains Mono,monospace" }}>Goles</p>
                                         <div className="text-sm space-y-2 max-h-52 overflow-y-auto" style={{ color: "#c8c8d8", fontFamily: "JetBrains Mono,monospace" }}>
                                           {record.participants
@@ -1320,10 +1320,10 @@ function HistorialView({ tournaments, history, onBack, onDeleteTournament, onUpd
                                         </div>
                                       </div>
                                     ) : record.gameId === "volley" ? (
-                                      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                                      <div className="lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-4">
                                         <div className="rounded-2xl p-4" style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)" }}>
-                                          <p className="text-[10px] uppercase mb-2" style={{ color: "#6b6b88", fontFamily: "JetBrains Mono,monospace" }}>Premios individuales</p>
-                                          <div className="space-y-2 text-sm" style={{ color: "#c8c8d8", fontFamily: "JetBrains Mono,monospace" }}>
+                                          <p className="text-[10px] uppercase tracking-[0.25em] mb-2" style={{ color: "#6b6b88", fontFamily: "JetBrains Mono,monospace" }}>TÍTULOS INDIVIDUALES</p>
+                                          <div className="space-y-3 text-sm" style={{ color: "#c8c8d8", fontFamily: "JetBrains Mono,monospace" }}>
                                             <div className="flex justify-between gap-2"><span>MVP</span><span className="font-semibold">{record.mvp ?? "N/A"}</span></div>
                                             <div className="flex justify-between gap-2"><span>Mejor sacador</span><span className="font-semibold">{record.bestServer ?? "N/A"}</span></div>
                                             <div className="flex justify-between gap-2"><span>King of the Air</span><span className="font-semibold">{computeVolleyTrophyWinner(record, "points")}</span></div>
@@ -1332,8 +1332,8 @@ function HistorialView({ tournaments, history, onBack, onDeleteTournament, onUpd
                                           </div>
                                         </div>
                                         <div className="rounded-2xl p-4" style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)", minHeight: "160px" }}>
-                                          <p className="text-[10px] uppercase mb-2" style={{ color: "#6b6b88", fontFamily: "JetBrains Mono,monospace" }}>Estadísticas de Volley</p>
-                                          <div className="text-sm space-y-3 max-h-52 overflow-y-auto" style={{ color: "#c8c8d8", fontFamily: "JetBrains Mono,monospace" }}>
+                                          <p className="text-[10px] uppercase tracking-[0.25em] mb-2" style={{ color: "#6b6b88", fontFamily: "JetBrains Mono,monospace" }}>ESTADÍSTICAS DE VOLLEY</p>
+                                          <div className="text-sm space-y-3 max-h-72 overflow-y-auto" style={{ color: "#c8c8d8", fontFamily: "JetBrains Mono,monospace" }}>
                                             {record.participants.map((player) => {
                                               const stats = record.playerStats?.[player];
                                               return (
@@ -1348,7 +1348,7 @@ function HistorialView({ tournaments, history, onBack, onDeleteTournament, onUpd
                                         </div>
                                       </div>
                                     ) : (
-                                      <div className="rounded-2xl p-4" style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)", minHeight: "160px" }}>
+                                      <div className="lg:col-span-2 rounded-2xl p-4" style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)", minHeight: "160px" }}>
                                         <p className="text-[10px] uppercase mb-2" style={{ color: "#6b6b88", fontFamily: "JetBrains Mono,monospace" }}>Kills</p>
                                         <div className="text-sm space-y-2 max-h-52 overflow-y-auto" style={{ color: "#c8c8d8", fontFamily: "JetBrains Mono,monospace" }}>
                                           {record.participants
@@ -1805,31 +1805,35 @@ function JugadoresView({ players, history, onPlayers, onDeletePlayer, onBack }: 
               ))}
             </div>
 
-            <div className="px-8 py-6 flex flex-col gap-4">
-              <p className="text-xs font-semibold tracking-widest" style={{ color: "#6b6b88", fontFamily: "JetBrains Mono,monospace" }}>POR JUEGO</p>
+            <div className="px-8 py-6 flex flex-col gap-6">
               {(() => {
                 const volleyTitles = computeVolleyTitles(selected);
-                const hasVolleyTitles = Object.values(volleyTitles).some((value) => value > 0);
-                if (!hasVolleyTitles) return null;
+                const hasVolleyHistory = history.some((record) => record.gameId === "volley");
+                if (!hasVolleyHistory) return null;
                 return (
-                  <div className="grid gap-3 sm:grid-cols-2">
-                    {[
-                      { label: "MVP", value: volleyTitles.mvp },
-                      { label: "Mejor sacador", value: volleyTitles.bestServer },
-                      { label: "King Of The Air", value: volleyTitles.kingOfTheAir },
-                      { label: "King Of The Court", value: volleyTitles.kingOfTheCourt },
-                      { label: "King Of The Wall", value: volleyTitles.kingOfTheWall },
-                    ]
-                      .filter((item) => item.value > 0)
-                      .map((item) => (
+                  <div className="rounded-[28px] p-5" style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)" }}>
+                    <p className="text-xs font-semibold tracking-widest uppercase mb-4" style={{ color: "#6b6b88", fontFamily: "JetBrains Mono,monospace" }}>TÍTULOS INDIVIDUALES</p>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                      {[
+                        { label: "MVP", value: volleyTitles.mvp },
+                        { label: "Mejor sacador", value: volleyTitles.bestServer },
+                        { label: "King Of The Air", value: volleyTitles.kingOfTheAir },
+                        { label: "King Of The Court", value: volleyTitles.kingOfTheCourt },
+                        { label: "King Of The Wall", value: volleyTitles.kingOfTheWall },
+                      ].map((item) => (
                         <div key={item.label} className="rounded-2xl p-4" style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)" }}>
                           <p className="text-[10px] uppercase mb-2" style={{ color: "#6b6b88", fontFamily: "JetBrains Mono,monospace" }}>{item.label}</p>
-                          <p className="text-lg font-semibold" style={{ color: "#e8e8f0", fontFamily: "'Barlow Condensed', sans-serif" }}>{item.value}</p>
+                          <p className="text-2xl font-semibold" style={{ color: "#e8e8f0", fontFamily: "'Barlow Condensed', sans-serif" }}>{item.value}</p>
                         </div>
                       ))}
+                    </div>
                   </div>
                 );
               })()}
+
+              <div>
+                <p className="text-xs font-semibold tracking-widest" style={{ color: "#6b6b88", fontFamily: "JetBrains Mono,monospace" }}>POR JUEGO</p>
+              </div>
               {d.games.map((g) => {
                 const rate = wr(g.w, g.l);
                 return (

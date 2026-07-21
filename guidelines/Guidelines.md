@@ -59,3 +59,51 @@ or initiating processes. They communicate interactivity and should have clear, a
   * Visual Style : Text-only with no border, using primary color
   * Usage : For actions that should be available but not emphasized
 -->
+
+## TORNEO DE VOLLEY
+
+### Fase de liga
+
+- Partido ida y vuelta dúos vs dúos
+- Los 2 mejores avanzan a una final mejor de 3
+- En caso de empate, se define por diferencia de puntos
+- En caso de empate en puntos se define en un duelo de 2do vs 3ero
+
+### Fase final
+
+- Final al mejor de 3 sets se determina el campeón
+- Ventaja de saques en el 1er y 3er duelo (solo si llegan) a quien finalizó primero la liga
+
+### Reglas básicas
+
+- Equipos decide la ruleta
+- En liga solo puedes optar a un personaje de tu roster
+- Enfrentamientos decide la ruleta
+- No se puede repetir dúo en 3 torneos seguidos
+- No se pueden hacer puntos con un rival afk
+- No se puede abandonar la partida
+- Entrar en un duelo máximo 5 minutos, fuera de ahí sanción
+- Cada rival tendrá ventaja de saque una vez en liguilla
+- En caso de que el juego te de el saque y no corresponde, entrega el balón al rival
+- En fase final puedes cambiar 1 vez tu personaje
+- Si el rival no toma el balón en fairplay, no tiene derecho a pedir el punto
+- No se cambia el personaje
+- Diferencia de 18 puntos, capote automático
+
+### Sanciones
+
+- Impuntualidad entrega 2 puntos al rival y castigo de habilidad por 10 puntos
+- Infringir una regla entrega 6 puntos al rival
+- Infringir dos reglas, entrega 10 puntos al rival y restricción de habilidad
+- Infringir tres o más reglas, pierde el duelo automáticamente
+- Cada infracción puede ser revisada y corregida por el VAR
+
+### Títulos Individuales
+Los siguientes premios se entregarán por votación colectiva al finalizar el torneo, o en su defecto, si se implementa un sistema de estadísticas manual.
+
+- MVP del Torneo: Decidido por votación de los participantes.
+- King of the Court: Mejor Asistidor.
+- King of the Wall: Mejor Bloqueador.
+- King of the Air: Mejor Atacante (Spiker).
+- King of the Line: Mejor Sacador.
+
