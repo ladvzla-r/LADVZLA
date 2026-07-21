@@ -1240,20 +1240,53 @@ function HistorialView({ tournaments, history, onBack, onDeleteTournament, onUpd
                                       <p className="text-[10px] uppercase mb-2" style={{ color: "#6b6b88", fontFamily: "JetBrains Mono,monospace" }}>Participantes</p>
                                       <div className="text-sm" style={{ color: "#c8c8d8", fontFamily: "JetBrains Mono,monospace" }}>{record.participants.join(" · ")}</div>
                                     </div>
-                                    <div className="rounded-2xl p-4" style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)", minHeight: "160px" }}>
-                                      <p className="text-[10px] uppercase mb-2" style={{ color: "#6b6b88", fontFamily: "JetBrains Mono,monospace" }}>{record.gameId === "azure" ? "Goles" : "Kills"}</p>
-                                      <div className="text-sm space-y-2 max-h-52 overflow-y-auto" style={{ color: "#c8c8d8", fontFamily: "JetBrains Mono,monospace" }}>
-                                        {record.participants
-                                          .map((player) => [player, record.kills[player] ?? 0] as [string, number])
-                                          .sort((a, b) => b[1] - a[1])
-                                          .map(([player, kills]) => (
-                                            <div key={player} className="flex justify-between gap-2">
-                                              <span>{player}</span>
-                                              <span>{kills}</span>
-                                            </div>
-                                          ))}
+                                    {record.gameId === "azure" ? (
+                                      <div className="rounded-2xl p-4" style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)", minHeight: "160px" }}>
+                                        <p className="text-[10px] uppercase mb-2" style={{ color: "#6b6b88", fontFamily: "JetBrains Mono,monospace" }}>Goles</p>
+                                        <div className="text-sm space-y-2 max-h-52 overflow-y-auto" style={{ color: "#c8c8d8", fontFamily: "JetBrains Mono,monospace" }}>
+                                          {record.participants
+                                            .map((player) => [player, record.playerStats?.[player]?.goals ?? 0] as [string, number])
+                                            .sort((a, b) => b[1] - a[1])
+                                            .map(([player, goals]) => (
+                                              <div key={player} className="flex justify-between gap-2">
+                                                <span>{player}</span>
+                                                <span>{goals}</span>
+                                              </div>
+                                            ))}
+                                        </div>
                                       </div>
-                                    </div>
+                                    ) : record.gameId === "volley" ? (
+                                      <div className="rounded-2xl p-4" style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)", minHeight: "160px" }}>
+                                        <p className="text-[10px] uppercase mb-2" style={{ color: "#6b6b88", fontFamily: "JetBrains Mono,monospace" }}>Volley</p>
+                                        <div className="text-sm space-y-3 max-h-52 overflow-y-auto" style={{ color: "#c8c8d8", fontFamily: "JetBrains Mono,monospace" }}>
+                                          {record.participants.map((player) => {
+                                            const stats = record.playerStats?.[player];
+                                            return (
+                                              <div key={player} className="rounded-2xl p-3" style={{ background: "rgba(255,255,255,0.02)" }}>
+                                                <div className="flex justify-between gap-2"><span>{player}</span><span>{stats?.points ?? 0} pts</span></div>
+                                                <div className="flex justify-between gap-2"><span className="text-[11px] text-[#a0a0b8]">Asistencias</span><span>{stats?.assists ?? 0}</span></div>
+                                                <div className="flex justify-between gap-2"><span className="text-[11px] text-[#a0a0b8]">Bloqueos</span><span>{stats?.blocks ?? 0}</span></div>
+                                              </div>
+                                            );
+                                          })}
+                                        </div>
+                                      </div>
+                                    ) : (
+                                      <div className="rounded-2xl p-4" style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)", minHeight: "160px" }}>
+                                        <p className="text-[10px] uppercase mb-2" style={{ color: "#6b6b88", fontFamily: "JetBrains Mono,monospace" }}>Kills</p>
+                                        <div className="text-sm space-y-2 max-h-52 overflow-y-auto" style={{ color: "#c8c8d8", fontFamily: "JetBrains Mono,monospace" }}>
+                                          {record.participants
+                                            .map((player) => [player, record.kills[player] ?? 0] as [string, number])
+                                            .sort((a, b) => b[1] - a[1])
+                                            .map(([player, kills]) => (
+                                              <div key={player} className="flex justify-between gap-2">
+                                                <span>{player}</span>
+                                                <span>{kills}</span>
+                                              </div>
+                                            ))}
+                                        </div>
+                                      </div>
+                                    )}
                                   </>
                                 )}
                               </div>
