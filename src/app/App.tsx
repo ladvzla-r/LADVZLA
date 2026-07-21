@@ -1324,7 +1324,6 @@ function HistorialView({ tournaments, history, onBack, onDeleteTournament, onUpd
                                         <div className="rounded-2xl p-4" style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)" }}>
                                           <p className="text-[10px] uppercase tracking-[0.25em] mb-2" style={{ color: "#6b6b88", fontFamily: "JetBrains Mono,monospace" }}>TÍTULOS INDIVIDUALES</p>
                                           <div className="space-y-3 text-sm" style={{ color: "#c8c8d8", fontFamily: "JetBrains Mono,monospace" }}>
-                                            <div className="flex justify-between gap-2"><span>MVP</span><span className="font-semibold">{record.mvp ?? "N/A"}</span></div>
                                             <div className="flex justify-between gap-2"><span>Mejor sacador</span><span className="font-semibold">{record.bestServer ?? "N/A"}</span></div>
                                             <div className="flex justify-between gap-2"><span>King of the Air</span><span className="font-semibold">{computeVolleyTrophyWinner(record, "points")}</span></div>
                                             <div className="flex justify-between gap-2"><span>King of the Court</span><span className="font-semibold">{computeVolleyTrophyWinner(record, "assists")}</span></div>
@@ -3507,7 +3506,13 @@ export default function App() {
         const res = await fetch(`${API_BASE}/api/tournaments`);
         if (res.ok) {
           const list = await res.json();
-          if (Array.isArray(list)) setTournamentHistory(list);
+          if (Array.isArray(list)) {
+            setTournamentHistory(list.map((record: TournamentRecord) => ({
+              ...record,
+              id: record.id ?? `${record.date}-${Math.random().toString(16).slice(2, 8)}`,
+              hidden: record.hidden ?? false,
+            })));
+          }
           return;
         }
       } catch (err) {
