@@ -1,9 +1,9 @@
-import { useState, useRef, useCallback, useEffect } from "react";
+﻿import { useState, useRef, useCallback, useEffect } from "react";
 import { Avatar, AvatarImage, AvatarFallback } from "./components/ui/avatar";
 
 const API_BASE = import.meta.env.VITE_API_URL || "";
 
-// ─── Types ────────────────────────────────────────────────────────────────────
+// â”€â”€â”€ Types â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 type View = "menu" | "tablas" | "jugadores" | "reglas" | "admin" | "torneo" | "historial";
 
@@ -31,6 +31,7 @@ interface Player {
   participations?: number;
   tournamentsWon?: number;
   mvps?: number;
+  elo?: number;
 }
 
 interface GameRules {
@@ -84,7 +85,7 @@ type TournamentRecord = {
   kills: Record<string, number>;
   playerStats?: Record<string, TournamentPlayerStats>;
   liguillaResults?: Record<string, string>;
-  format: "liguilla" | "liguilla+elim";
+  format: "liguilla" | "liguilla+elim" | "direct";
   teamScores?: Record<string, { home: number | null; away: number | null }>;
   finalMatch?: {
     home: string | null;
@@ -104,7 +105,7 @@ interface RippleItem {
   size: number;
 }
 
-// ─── Initial Data ─────────────────────────────────────────────────────────────
+// â”€â”€â”€ Initial Data â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 const INITIAL_PLAYERS: Player[] = [];
 
@@ -118,7 +119,7 @@ const TOURNAMENTS: TournamentDef[] = [
     border: "rgba(255,77,109,0.3)",
     textColor: "#ff8fa3",
     bgStripe: "rgba(255,77,109,0.04)",
-    icon: "⚔️",
+    icon: "âš”ï¸",
     extraCols: [{ label: "Kills", key: "kills" }],
     stats: [
       { player: "Zektro",    w: 18, l: 6,  streak: 3,  mvp: 5, tournamentsWon: 2 },
@@ -131,44 +132,44 @@ const TOURNAMENTS: TournamentDef[] = [
     ],
     rules: {
       format: "Liguilla 2v2 + Final Mejor de 5",
-      matchFormat: "Partido único en liguilla; final mejor de 5 en servidor E.E.U.U.",
-      scoring: "Victoria: 3 pts · Derrota: 0 pts",
-      advancement: "Top 4 avanzan a semis. Semis: 1°vs4°, 2°vs3°. Final mejor de 5.",
-      extra: "Triple empate se define por diferencia de rondas; si persiste, decide el enfrentamiento entre 2° y 3°.",
+      matchFormat: "Partido Ãºnico en liguilla; final mejor de 5 en servidor E.E.U.U.",
+      scoring: "Victoria: 3 pts Â· Derrota: 0 pts",
+      advancement: "Top 4 avanzan a semis. Semis: 1Â°vs4Â°, 2Â°vs3Â°. Final mejor de 5.",
+      extra: "Triple empate se define por diferencia de rondas; si persiste, decide el enfrentamiento entre 2Â° y 3Â°.",
       sections: [
         {
           title: "Fase de liguilla",
           lines: [
-            "Partido único cada enfrentamiento de dúos vs dúos.",
-            "La posición inicial de los equipos la definirá la ruleta.",
-            "En caso de triple empate, se definirá por diferencia de rondas.",
-            "En caso de empate en rondas, se definirá en enfrentamiento entre el 2do y el 3ero.",
+            "Partido Ãºnico cada enfrentamiento de dÃºos vs dÃºos.",
+            "La posiciÃ³n inicial de los equipos la definirÃ¡ la ruleta.",
+            "En caso de triple empate, se definirÃ¡ por diferencia de rondas.",
+            "En caso de empate en rondas, se definirÃ¡ en enfrentamiento entre el 2do y el 3ero.",
           ],
         },
         {
           title: "Fase final",
           lines: [
-            "Se jugará entre finalistas un mejor de 5 en servidor de estados unidos.",
+            "Se jugarÃ¡ entre finalistas un mejor de 5 en servidor de estados unidos.",
           ],
         },
         {
-          title: "Reglas básicas",
+          title: "Reglas bÃ¡sicas",
           lines: [
             "Partidas en servidor neutral (E.E.U.U.).",
             "Los equipos los decide la ruleta.",
             "No usar armas prohibidas.",
             "Respetar el orden de enfrentamientos (decide la ruleta).",
-            "En caso de tocar el mismo equipo en 2 torneos seguidos, al siguiente no podrían tocar juntos.",
+            "En caso de tocar el mismo equipo en 2 torneos seguidos, al siguiente no podrÃ­an tocar juntos.",
             "Tiempo infinito.",
-            "Solo jugar con las armas desbloqueadas (excepción de armas explosivas).",
+            "Solo jugar con las armas desbloqueadas (excepciÃ³n de armas explosivas).",
           ],
         },
         {
           title: "En caso de haber 7 jugadores",
           lines: [
-            "En 2 vs 1, el equipo dúo deberá llegar 1x1 sin objeción.",
-            "El solitario tiene opción a botiquín si así lo desea (sin importar si lo tienen o no).",
-            "El jugador que toque solo lo decidirá la ruleta.",
+            "En 2 vs 1, el equipo dÃºo deberÃ¡ llegar 1x1 sin objeciÃ³n.",
+            "El solitario tiene opciÃ³n a botiquÃ­n si asÃ­ lo desea (sin importar si lo tienen o no).",
+            "El jugador que toque solo lo decidirÃ¡ la ruleta.",
           ],
         },
         {
@@ -176,9 +177,9 @@ const TOURNAMENTS: TournamentDef[] = [
           lines: [
             "Lanzacohetes.",
             "Lanzagranadas.",
-            "Botiquín (dúo).",
+            "BotiquÃ­n (dÃºo).",
             "Minas y C4.",
-            "Minigun y armas exóticas como las de laser.",
+            "Minigun y armas exÃ³ticas como las de laser.",
           ],
         },
       ],
@@ -193,7 +194,7 @@ const TOURNAMENTS: TournamentDef[] = [
     border: "rgba(0,212,255,0.3)",
     textColor: "#67e8f9",
     bgStripe: "rgba(0,212,255,0.04)",
-    icon: "🔵",
+    icon: "ðŸ”µ",
     extraCols: [{ label: "Goles", key: "goals" }],
     stats: [
       { player: "Pixelate",  w: 20, l: 4,  streak: 5,  mvp: 7, tournamentsWon: 2, goals: 18 },
@@ -207,18 +208,18 @@ const TOURNAMENTS: TournamentDef[] = [
     rules: {
       format: "Liguilla ida y vuelta + Final ida y vuelta",
       matchFormat: "Fase de liga 2v2 a ida y vuelta. Final ida y vuelta con desempate por diferencia de goles.",
-      scoring: "Victoria: 3 pts · Empate: 1 pt · Derrota: 0 pts",
-      advancement: "Clasifican los 2 mejores dúos. Si la final queda 1-1, se define por diferencia de goles; si sigue igual, juego extra.",
-      extra: "La ruleta define los duelos y personajes. No se cambian después de que arranca la fase. Si falta un personaje, debe haber prueba; de lo contrario, derrota automática.",
+      scoring: "Victoria: 3 pts Â· Empate: 1 pt Â· Derrota: 0 pts",
+      advancement: "Clasifican los 2 mejores dÃºos. Si la final queda 1-1, se define por diferencia de goles; si sigue igual, juego extra.",
+      extra: "La ruleta define los duelos y personajes. No se cambian despuÃ©s de que arranca la fase. Si falta un personaje, debe haber prueba; de lo contrario, derrota automÃ¡tica.",
       sections: [
         {
           title: "Fase de liga",
           lines: [
             "Partidos 2v2 de ida y vuelta.",
-            "Clasifican los 2 mejores dúos.",
+            "Clasifican los 2 mejores dÃºos.",
             "El desempate en tabla es por diferencia de goles.",
-            "Si el desempate sigue igual, se define por duelo directo entre 2° y 3°.",
-            "La posición inicial la define la ruleta.",
+            "Si el desempate sigue igual, se define por duelo directo entre 2Â° y 3Â°.",
+            "La posiciÃ³n inicial la define la ruleta.",
           ],
         },
         {
@@ -230,21 +231,21 @@ const TOURNAMENTS: TournamentDef[] = [
           ],
         },
         {
-          title: "Reglas básicas",
+          title: "Reglas bÃ¡sicas",
           lines: [
-            "Servidor de E.E.U.U. salvo el caso de dúos del sur.",
-            "La ruleta decide los dúos y los personajes.",
+            "Servidor de E.E.U.U. salvo el caso de dÃºos del sur.",
+            "La ruleta decide los dÃºos y los personajes.",
             "No se cambian personajes una vez iniciada la fase.",
             "Si un equipo repite en dos torneos seguidos, no puede volver a coincidir en el siguiente.",
-            "Si no hay pruebas de un personaje no disponible, se declara derrota automática.",
+            "Si no hay pruebas de un personaje no disponible, se declara derrota automÃ¡tica.",
           ],
         },
         {
           title: "Sanciones",
           lines: [
             "Usar personaje distinto al asignado suma 3 goles al rival.",
-            "Equipo incompleto: 1 minuto fuera y balón para el rival.",
-            "No cumplir con la cuarta sanción suma 2 goles al rival.",
+            "Equipo incompleto: 1 minuto fuera y balÃ³n para el rival.",
+            "No cumplir con la cuarta sanciÃ³n suma 2 goles al rival.",
             "Demora: 30 segundos sin habilidades.",
             "Las sanciones pueden revisarse con VAR.",
           ],
@@ -261,7 +262,7 @@ const TOURNAMENTS: TournamentDef[] = [
     border: "rgba(163,230,53,0.3)",
     textColor: "#bef264",
     bgStripe: "rgba(163,230,53,0.04)",
-    icon: "🏐",
+    icon: "ðŸ",
     extraCols: [
       { label: "Pts", key: "points" },
       { label: "Asistencias", key: "assists" },
@@ -278,15 +279,15 @@ const TOURNAMENTS: TournamentDef[] = [
     ],
     rules: {
       format: "Liguilla ida y vuelta + Final Mejor de 3",
-      matchFormat: "Partido ida y vuelta dúos vs dúos; final mejor de 3 sets",
-      scoring: "Victoria: W · Derrota: L · Diferencia de puntos para desempate",
-      advancement: "Clasifican los mejores dúos según la liguilla; la final determina el campeón al mejor de 3.",
+      matchFormat: "Partido ida y vuelta dÃºos vs dÃºos; final mejor de 3 sets",
+      scoring: "Victoria: W Â· Derrota: L Â· Diferencia de puntos para desempate",
+      advancement: "Clasifican los mejores dÃºos segÃºn la liguilla; la final determina el campeÃ³n al mejor de 3.",
       extra: "Ventaja de saque en la final para quien haya finalizado primero la liga; reglas de fairplay y sanciones aplican.",
       sections: [
         {
           title: "Fase de liga",
           lines: [
-            "Partido ida y vuelta dúos vs dúos.",
+            "Partido ida y vuelta dÃºos vs dÃºos.",
             "En caso de empate, se define por diferencia de puntos.",
             "En caso de empate en puntos se define en un duelo de 2do vs 3ero.",
           ],
@@ -294,26 +295,26 @@ const TOURNAMENTS: TournamentDef[] = [
         {
           title: "Fase final",
           lines: [
-            "Final al mejor de 3 sets para determinar el campeón.",
-            "Ventaja de saques en el 1er y 3er duelo (solo si se juegan) para quien finalizó primero la liga.",
+            "Final al mejor de 3 sets para determinar el campeÃ³n.",
+            "Ventaja de saques en el 1er y 3er duelo (solo si se juegan) para quien finalizÃ³ primero la liga.",
           ],
         },
         {
-          title: "Reglas básicas",
+          title: "Reglas bÃ¡sicas",
           lines: [
             "Equipos decide la ruleta.",
             "En liga solo puedes optar a un personaje de tu roster.",
             "Enfrentamientos decide la ruleta.",
-            "No se puede repetir dúo en 3 torneos seguidos.",
+            "No se puede repetir dÃºo en 3 torneos seguidos.",
             "No se pueden hacer puntos con un rival afk.",
             "No se puede abandonar la partida.",
-            "Entrar en un duelo máximo 5 minutos; fuera de ahí sanción.",
-            "Cada rival tendrá ventaja de saque una vez en liguilla.",
-            "Si el juego te da el saque y no corresponde, entrega el balón al rival.",
+            "Entrar en un duelo mÃ¡ximo 5 minutos; fuera de ahÃ­ sanciÃ³n.",
+            "Cada rival tendrÃ¡ ventaja de saque una vez en liguilla.",
+            "Si el juego te da el saque y no corresponde, entrega el balÃ³n al rival.",
             "En fase final puedes cambiar 1 vez tu personaje.",
-            "Si el rival no toma el balón en fairplay, no tiene derecho a pedir el punto.",
-            "No se cambia el personaje durante la fase (salvo excepción permitida).",
-            "Diferencia de 18 puntos, capote automático.",
+            "Si el rival no toma el balÃ³n en fairplay, no tiene derecho a pedir el punto.",
+            "No se cambia el personaje durante la fase (salvo excepciÃ³n permitida).",
+            "Diferencia de 18 puntos, capote automÃ¡tico.",
           ],
         },
         {
@@ -321,15 +322,15 @@ const TOURNAMENTS: TournamentDef[] = [
           lines: [
             "Impuntualidad: entrega 2 puntos al rival y castigo de habilidad por 10 puntos.",
             "Infringir una regla: entrega 6 puntos al rival.",
-            "Infringir dos reglas: entrega 10 puntos al rival y restricción de habilidad.",
-            "Infringir tres o más reglas: pierde el duelo automáticamente.",
-            "Cada infracción puede ser revisada y corregida por el VAR.",
+            "Infringir dos reglas: entrega 10 puntos al rival y restricciÃ³n de habilidad.",
+            "Infringir tres o mÃ¡s reglas: pierde el duelo automÃ¡ticamente.",
+            "Cada infracciÃ³n puede ser revisada y corregida por el VAR.",
           ],
         },
         {
-          title: "Títulos individuales",
+          title: "TÃ­tulos individuales",
           lines: [
-            "MVP del Torneo: Decidido por votación de los participantes.",
+            "MVP del Torneo: Decidido por votaciÃ³n de los participantes.",
             "King of the Court: Mejor Asistidor.",
             "King of the Wall: Mejor Bloqueador.",
             "King of the Air: Mejor Atacante (Spiker).",
@@ -348,7 +349,7 @@ const TOURNAMENTS: TournamentDef[] = [
     border: "rgba(245,158,11,0.3)",
     textColor: "#fcd34d",
     bgStripe: "rgba(245,158,11,0.04)",
-    icon: "👑",
+    icon: "ðŸ‘‘",
     extraCols: [{ label: "Copas", key: "cups" }],
     stats: [
       { player: "NovaSky",   w: 22, l: 5,  streak: 6,  mvp: 0, tournamentsWon: 3, trophies: 8340 },
@@ -361,21 +362,21 @@ const TOURNAMENTS: TournamentDef[] = [
     ],
     rules: {
       format: "Liga de mazos + Semis/Final mejor de 3",
-      matchFormat: "Fase de liga a partido único; semis y final al mejor de 5 (primero a 3).",
-      scoring: "Victoria por coronas: 3 puntos · Derrota: 0 puntos",
+      matchFormat: "Fase de liga a partido Ãºnico; semis y final al mejor de 5 (primero a 3).",
+      scoring: "Victoria por coronas: 3 puntos Â· Derrota: 0 puntos",
       advancement: "Los primeros 4 clasifican directo a semis. El quinto puede retar con wildcard.",
       extra: "Top 1 obtiene ventaja en semis. No se repiten mazos exactos en fases finales.",
       sections: [
         {
           title: "Fase de liga",
           lines: [
-            "Enfrentamientos a partido único.",
+            "Enfrentamientos a partido Ãºnico.",
             "Jugar con al menos 4 mazos diferentes entre los 6 duelos posibles.",
             "Se permite repetir un mazo una sola vez, pero no de forma consecutiva.",
-            "Todos los partidos se juegan en simultáneo.",
-            "Cada mazo debe tener al menos 5 cartas diferentes respecto al último mazo usado.",
+            "Todos los partidos se juegan en simultÃ¡neo.",
+            "Cada mazo debe tener al menos 5 cartas diferentes respecto al Ãºltimo mazo usado.",
             "Clasifican los primeros 4 jugadores.",
-            "El jugador que quede 5° obtiene opción a wildcard.",
+            "El jugador que quede 5Â° obtiene opciÃ³n a wildcard.",
             "Si clasifica con wildcard, puede retar al top 4 en un duelo extra.",
             "Si el top 4 gana 1 duelo, clasifica directo a semis.",
             "El top 5 debe ganar 2 duelos para clasificar.",
@@ -386,23 +387,54 @@ const TOURNAMENTS: TournamentDef[] = [
         {
           title: "Fase final",
           lines: [
-            "Los emparejamientos se basan en la posición de la fase de liga: 1 vs 4 y 2 vs 3.",
+            "Los emparejamientos se basan en la posiciÃ³n de la fase de liga: 1 vs 4 y 2 vs 3.",
             "El top 1 puede repetir hasta 4 cartas del mazo que desee solo en semis contra el top 4.",
             "Semis y final se juegan al mejor de 3.",
             "No se pueden repetir mazos exactos en fases finales.",
-            "Cada mazo debe tener al menos 5 cartas diferentes del último mazo usado en fases finales.",
-            "Los mazos se reinician al inicio de semis y también al inicio de la final.",
+            "Cada mazo debe tener al menos 5 cartas diferentes del Ãºltimo mazo usado en fases finales.",
+            "Los mazos se reinician al inicio de semis y tambiÃ©n al inicio de la final.",
             "Puedes usar en fases finales los mazos de la fase de liga sin importar el rival.",
           ],
         },
         {
           title: "Sanciones",
           lines: [
-            "Infringir una norma en la liguilla te baneará de usar 3 cartas en los próximos 4 duelos, decididas por los restantes.",
-            "Infringir más de una norma en la liguilla elimina automáticamente del torneo.",
-            "Infringir una norma en fase final da la victoria automática al rival.",
-            "Infringir más de una norma en fase final elimina automáticamente del torneo.",
-            "Cada infracción involuntaria puede ser corregida por los espectadores (VAR).",
+            "Infringir una norma en la liguilla te banearÃ¡ de usar 3 cartas en los prÃ³ximos 4 duelos, decididas por los restantes.",
+            "Infringir mÃ¡s de una norma en la liguilla elimina automÃ¡ticamente del torneo.",
+            "Infringir una norma en fase final da la victoria automÃ¡tica al rival.",
+            "Infringir mÃ¡s de una norma en fase final elimina automÃ¡ticamente del torneo.",
+            "Cada infracciÃ³n involuntaria puede ser corregida por los espectadores (VAR).",
+          ],
+        },
+      ],
+    },
+  },
+  {
+    id: "cobblemon",
+    name: "Cobblemon",
+    tag: "DUELS",
+    color: "#fb7185",
+    glow: "rgba(251,113,133,0.22)",
+    border: "rgba(251,113,133,0.3)",
+    textColor: "#fda4af",
+    bgStripe: "rgba(251,113,133,0.04)",
+    icon: "ðŸ¾",
+    extraCols: [],
+    stats: [],
+    rules: {
+      format: "EliminaciÃ³n directa 1v1",
+      matchFormat: "Bracket directo sin liguilla. Con 5 jugadores hay wildcard; con 6 hay 2 byes.",
+      scoring: "Victoria directa en cada duelo.",
+      advancement: "Ganador avanza en el bracket. Final entre los 2 Ãºltimos.",
+      extra: "No hay liguilla; solo bracket directo a partir de la selecciÃ³n inicial.",
+      sections: [
+        {
+          title: "Bracket Cobblemon",
+          lines: [
+            "5 jugadores: wildcard entre los 2 de menor ELO; el ganador avanza a semifinales con los otros 3.",
+            "6 jugadores: sorteo aleatorio en bracket de 8 con 2 byes. Puesto 6 y 5 avanzan directo a semifinales.",
+            "Los ganadores de cada semifinal avanzan a la final.",
+            "No hay liguilla ni rondas de grupo.",
           ],
         },
       ],
@@ -414,7 +446,7 @@ const AZURE_CHARACTERS = [
   "Isagi","Gagamaru","Chigiri","Nagi","Sae","Barou","Aiku","Yukimiya","Kunigami","Kiyora","Karasu","Otoya","Bachira","Kurona","Kaiser","Don Lorenzo","Rin","Reo","Shidou"
 ];
 
-// ─── Helper Functions ─────────────────────────────────────────────────────────
+// â”€â”€â”€ Helper Functions â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 const wr = (w: number, l: number) => {
   const t = w + l;
@@ -422,10 +454,10 @@ const wr = (w: number, l: number) => {
 };
 
 const medal = (rank: number) => {
-  if (rank === 1) return "🥇";
-  if (rank === 2) return "🥈";
-  if (rank === 3) return "🥉";
-  return `${rank}°`;
+  if (rank === 1) return "ðŸ¥‡";
+  if (rank === 2) return "ðŸ¥ˆ";
+  if (rank === 3) return "ðŸ¥‰";
+  return `${rank}Â°`;
 };
 
 interface TeamInfo {
@@ -793,7 +825,7 @@ function buildGlobalStats(players: Player[], history: TournamentRecord[]) {
   }));
 }
 
-// ─── Shared UI ────────────────────────────────────────────────────────────────
+// â”€â”€â”€ Shared UI â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 function useRipple(duration = 550) {
   const [ripples, setRipples] = useState<RippleItem[]>([]);
@@ -841,13 +873,13 @@ function BackButton({ onClick }: { onClick: () => void }) {
       style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.09)", color: "#a0a0b8", fontFamily: "'Barlow', sans-serif" }}
     >
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
-      MENÚ
+      MENÃš
     </Ripple>
   );
 }
 
 function StreakBadge({ streak }: { streak: number }) {
-  if (streak === 0) return <span style={{ color: "#6b6b88", fontFamily: "JetBrains Mono,monospace", fontSize: "12px" }}>—</span>;
+  if (streak === 0) return <span style={{ color: "#6b6b88", fontFamily: "JetBrains Mono,monospace", fontSize: "12px" }}>â€”</span>;
   const win = streak > 0;
   return (
     <span className="text-xs px-1.5 py-0.5 rounded font-semibold" style={{
@@ -869,19 +901,19 @@ function SectionTitle({ children, sub }: { children: React.ReactNode; sub?: stri
   );
 }
 
-// ─── Home Menu ────────────────────────────────────────────────────────────────
+// â”€â”€â”€ Home Menu â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 const MENU_ITEMS: { id: View; icon: string; label: string; desc: string; color: string; glow: string; border: string; adminOnly?: boolean }[] = [
-  { id: "tablas",    icon: "📊", label: "TABLAS",         desc: "Estadísticas W/L, MVPs y títulos por torneo",      color: "#7c3aed", glow: "rgba(124,58,237,0.3)",  border: "rgba(124,58,237,0.35)" },
-  { id: "jugadores", icon: "🎮", label: "JUGADORES",      desc: "Perfiles individuales con stats acumuladas",        color: "#00d4ff", glow: "rgba(0,212,255,0.25)",  border: "rgba(0,212,255,0.3)"  },
-  { id: "historial", icon: "🗂️", label: "HISTORIAL",      desc: "Ver torneos jugados y resultados por categoría",     color: "#f472b6", glow: "rgba(244,114,182,0.25)", border: "rgba(244,114,182,0.35)" },
-  { id: "reglas",    icon: "📋", label: "REGLAS",         desc: "Formatos y reglamento de cada torneo",              color: "#a3e635", glow: "rgba(163,230,53,0.22)", border: "rgba(163,230,53,0.3)" },
+  { id: "tablas",    icon: "ðŸ“Š", label: "TABLAS",         desc: "EstadÃ­sticas W/L, MVPs y tÃ­tulos por torneo",      color: "#7c3aed", glow: "rgba(124,58,237,0.3)",  border: "rgba(124,58,237,0.35)" },
+  { id: "jugadores", icon: "ðŸŽ®", label: "JUGADORES",      desc: "Perfiles individuales con stats acumuladas",        color: "#00d4ff", glow: "rgba(0,212,255,0.25)",  border: "rgba(0,212,255,0.3)"  },
+  { id: "historial", icon: "ðŸ—‚ï¸", label: "HISTORIAL",      desc: "Ver torneos jugados y resultados por categorÃ­a",     color: "#f472b6", glow: "rgba(244,114,182,0.25)", border: "rgba(244,114,182,0.35)" },
+  { id: "reglas",    icon: "ðŸ“‹", label: "REGLAS",         desc: "Formatos y reglamento de cada torneo",              color: "#a3e635", glow: "rgba(163,230,53,0.22)", border: "rgba(163,230,53,0.3)" },
   
-  { id: "torneo",    icon: "🏆", label: "NUEVO TORNEO",   desc: "Genera liguilla y cuadro de eliminación",          color: "#f59e0b", glow: "rgba(245,158,11,0.25)", border: "rgba(245,158,11,0.3)" },
-  { id: "admin",     icon: "🔐", label: "ADMIN",          desc: "Gestionar jugadores — acceso restringido",         color: "#ff4d6d", glow: "rgba(255,77,109,0.25)", border: "rgba(255,77,109,0.3)", adminOnly: true },
+  { id: "torneo",    icon: "ðŸ†", label: "NUEVO TORNEO",   desc: "Genera liguilla y cuadro directo; Cobblemon ahora usa bracket directo",          color: "#f59e0b", glow: "rgba(245,158,11,0.25)", border: "rgba(245,158,11,0.3)" },
+  { id: "admin",     icon: "ðŸ”", label: "ADMIN",          desc: "Gestionar jugadores â€” acceso restringido",         color: "#ff4d6d", glow: "rgba(255,77,109,0.25)", border: "rgba(255,77,109,0.3)", adminOnly: true },
 ];
 
-function HomeMenu({ onNavigate }: { onNavigate: (v: View) => void }) {
+function HomeMenu({ onNavigate, playerCount, gameCount }: { onNavigate: (v: View) => void; playerCount: number; gameCount: number }) {
   return (
     <div className="min-h-screen bg-background flex flex-col items-center justify-center px-4 py-12" style={{ fontFamily: "'Barlow', sans-serif" }}>
       <div className="fixed inset-0 pointer-events-none overflow-hidden" aria-hidden>
@@ -894,7 +926,7 @@ function HomeMenu({ onNavigate }: { onNavigate: (v: View) => void }) {
         {/* Header */}
         <div className="text-center mb-12">
           <p className="text-xs tracking-[0.25em] uppercase mb-4" style={{ fontFamily: "JetBrains Mono,monospace", color: "#6b6b88" }}>
-            Torneos de Amigos · 2025
+            Torneos de Amigos Â· 2025
           </p>
           <h1 className="text-6xl sm:text-7xl font-extrabold leading-none tracking-tight mb-4" style={{
             fontFamily: "'Barlow Condensed', sans-serif",
@@ -904,9 +936,9 @@ function HomeMenu({ onNavigate }: { onNavigate: (v: View) => void }) {
             TOURNAMENT HUB
           </h1>
           <div className="flex items-center justify-center gap-4 text-xs" style={{ fontFamily: "JetBrains Mono,monospace", color: "#6b6b88" }}>
-            <span>7 JUGADORES</span>
+            <span>{playerCount} JUGADORES</span>
             <span className="w-1 h-1 rounded-full" style={{ background: "#3a3a50", display: "inline-block" }} />
-            <span>4 JUEGOS</span>
+            <span>{gameCount} JUEGOS</span>
             <span className="w-1 h-1 rounded-full" style={{ background: "#3a3a50", display: "inline-block" }} />
             <span>TEMPORADA ACTIVA</span>
           </div>
@@ -952,7 +984,7 @@ function HomeMenu({ onNavigate }: { onNavigate: (v: View) => void }) {
   );
 }
 
-// ─── Tablas View ──────────────────────────────────────────────────────────────
+// â”€â”€â”€ Tablas View â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 function TournamentTable({ t, sortKey, setSortKey, players, history }: {
   t: TournamentDef;
@@ -987,14 +1019,14 @@ function TournamentTable({ t, sortKey, setSortKey, players, history }: {
               <h2 className="text-2xl font-extrabold leading-none" style={{ fontFamily: "'Barlow Condensed', sans-serif", color: t.color, textShadow: `0 0 20px ${t.glow}` }}>{t.name.toUpperCase()}</h2>
               <span className="text-[10px] px-1.5 py-0.5 rounded" style={{ fontFamily: "JetBrains Mono,monospace", background: `${t.color}18`, color: t.textColor, border: `1px solid ${t.border}` }}>{t.tag}</span>
             </div>
-            <p className="text-xs mt-1" style={{ fontFamily: "JetBrains Mono,monospace", color: "#6b6b88" }}>{filteredStats.filter((s) => s.participations > 0).length} jugadores · {totalMatches} partidas totales</p>
+            <p className="text-xs mt-1" style={{ fontFamily: "JetBrains Mono,monospace", color: "#6b6b88" }}>{filteredStats.filter((s) => s.participations > 0).length} jugadores Â· {totalMatches} partidas totales</p>
           </div>
         </div>
       </div>
 
       <div className="px-6 py-2.5 flex items-center gap-1.5" style={{ borderBottom: "1px solid rgba(255,255,255,0.05)" }}>
         <span className="text-[10px] mr-1" style={{ color: "#6b6b88", fontFamily: "JetBrains Mono,monospace" }}>ORDEN:</span>
-        {([['rank', 'RANKING'], ['w', 'W'], ['l', 'L'], ['wr', 'WIN%'], ['titles', 'TÍTULOS'], ...t.extraCols.map((col) => [col.key, col.label.toUpperCase()] as const)] as const).map(([k, label]) => (
+        {([['rank', 'RANKING'], ['w', 'W'], ['l', 'L'], ['wr', 'WIN%'], ['titles', 'TÃTULOS'], ...t.extraCols.map((col) => [col.key, col.label.toUpperCase()] as const)] as const).map(([k, label]) => (
           <button key={k} onClick={() => setSortKey(k)}
             className="text-[10px] px-2.5 py-1 rounded-lg transition-all"
             style={{ fontFamily: "JetBrains Mono,monospace", background: sortKey === k ? `${t.color}20` : "transparent", color: sortKey === k ? t.textColor : "#6b6b88", border: sortKey === k ? `1px solid ${t.border}` : "1px solid transparent" }}>
@@ -1007,7 +1039,7 @@ function TournamentTable({ t, sortKey, setSortKey, players, history }: {
         <table className="w-full">
           <thead>
             <tr style={{ borderBottom: "1px solid rgba(255,255,255,0.05)" }}>
-              {['#', 'JUGADOR', 'W', 'L', 'PARTIDAS', 'WIN%', 'TÍTULOS', 'MVPs', 'PARTIC.', ...t.extraCols.map((col) => col.label.toUpperCase()), ''].map((h, i) => (
+              {['#', 'JUGADOR', 'W', 'L', 'PARTIDAS', 'WIN%', 'TÃTULOS', 'MVPs', 'PARTIC.', ...t.extraCols.map((col) => col.label.toUpperCase()), ''].map((h, i) => (
                 <th key={i} className={`py-3 text-[10px] font-medium ${i === 0 ? "pl-6 pr-2 text-left w-10" : i === 1 ? "px-2 text-left" : i === 9 + t.extraCols.length ? "px-6 text-right" : "px-4 text-center"}`}
                   style={{ color: "#6b6b88", fontFamily: "JetBrains Mono,monospace" }}>{h}</th>
               ))}
@@ -1109,7 +1141,7 @@ function HistorialView({ tournaments, history, onBack, onDeleteTournament, onUpd
   const saveRecordEdits = (recordId: string, record: TournamentRecord) => {
     const championValue = editChampion.trim();
     if (!championValue) {
-      setEditError("El nombre del campeón no puede quedar vacío.");
+      setEditError("El nombre del campeÃ³n no puede quedar vacÃ­o.");
       return;
     }
     onUpdateTournament({
@@ -1133,7 +1165,7 @@ function HistorialView({ tournaments, history, onBack, onDeleteTournament, onUpd
     <div className="min-h-screen bg-background px-4 sm:px-8 py-12" style={{ fontFamily: "'Barlow', sans-serif" }}>
       <div className="max-w-5xl mx-auto flex flex-col gap-8">
         <BackButton onClick={onBack} />
-        <SectionTitle sub="Selecciona una categoría de torneo para ver los resultados">HISTORIAL DE TORNEOS</SectionTitle>
+        <SectionTitle sub="Selecciona una categorÃ­a de torneo para ver los resultados">HISTORIAL DE TORNEOS</SectionTitle>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {tournaments.map((t) => (
@@ -1162,8 +1194,8 @@ function HistorialView({ tournaments, history, onBack, onDeleteTournament, onUpd
         <div className="rounded-2xl p-6" style={{ background: "linear-gradient(160deg, #0f0f1a, #09090f)", border: "1px solid rgba(255,255,255,0.08)" }}>
           {!selectedGame ? (
             <div className="text-center py-20">
-              <p className="text-sm font-semibold" style={{ color: "#e8e8f0", fontFamily: "'Barlow Condensed', sans-serif" }}>Selecciona primero una categoría de torneo.</p>
-              <p className="text-xs mt-2" style={{ color: "#6b6b88", fontFamily: "JetBrains Mono,monospace" }}>Aquí verás todos los torneos jugados con su fecha, campeón, MVP y detalles.</p>
+              <p className="text-sm font-semibold" style={{ color: "#e8e8f0", fontFamily: "'Barlow Condensed', sans-serif" }}>Selecciona primero una categorÃ­a de torneo.</p>
+              <p className="text-xs mt-2" style={{ color: "#6b6b88", fontFamily: "JetBrains Mono,monospace" }}>AquÃ­ verÃ¡s todos los torneos jugados con su fecha, campeÃ³n, MVP y detalles.</p>
             </div>
           ) : (
             <>
@@ -1184,7 +1216,7 @@ function HistorialView({ tournaments, history, onBack, onDeleteTournament, onUpd
                 {!isAdmin ? (
                   <div className="grid gap-3 sm:grid-cols-[1fr_auto] items-end">
                     <div>
-                      <p className="text-[10px] uppercase tracking-widest mb-2" style={{ color: "#6b6b88", fontFamily: "JetBrains Mono,monospace" }}>Desbloquear edición</p>
+                      <p className="text-[10px] uppercase tracking-widest mb-2" style={{ color: "#6b6b88", fontFamily: "JetBrains Mono,monospace" }}>Desbloquear ediciÃ³n</p>
                       <input
                         type="password"
                         value={adminPin}
@@ -1212,8 +1244,8 @@ function HistorialView({ tournaments, history, onBack, onDeleteTournament, onUpd
 
               {filteredHistory.length === 0 ? (
                 <div className="text-center py-16">
-                  <p className="text-sm font-semibold" style={{ color: "#e8e8f0", fontFamily: "'Barlow Condensed', sans-serif" }}>No hay torneos guardados para esta categoría.</p>
-                  <p className="text-xs mt-2" style={{ color: "#6b6b88", fontFamily: "JetBrains Mono,monospace" }}>Crea un nuevo torneo y guarda los resultados para que aparezcan aquí.</p>
+                  <p className="text-sm font-semibold" style={{ color: "#e8e8f0", fontFamily: "'Barlow Condensed', sans-serif" }}>No hay torneos guardados para esta categorÃ­a.</p>
+                  <p className="text-xs mt-2" style={{ color: "#6b6b88", fontFamily: "JetBrains Mono,monospace" }}>Crea un nuevo torneo y guarda los resultados para que aparezcan aquÃ­.</p>
                 </div>
               ) : (
                 <div className="space-y-4">
@@ -1225,11 +1257,11 @@ function HistorialView({ tournaments, history, onBack, onDeleteTournament, onUpd
                         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
                                   <div>
                                       <p className="text-xs uppercase tracking-[0.25em]" style={{ color: "#6b6b88", fontFamily: "JetBrains Mono,monospace" }}>{formatDate(record.date)}</p>
-                                      <p className="text-sm" style={{ color: "#a0a0b8", fontFamily: "JetBrains Mono,monospace" }}>{selectedGame?.name ?? record.gameId} · Edición {record.edition ?? 1}</p>
+                                      <p className="text-sm" style={{ color: "#a0a0b8", fontFamily: "JetBrains Mono,monospace" }}>{selectedGame?.name ?? record.gameId} Â· EdiciÃ³n {record.edition ?? 1}</p>
                                       <p className="text-sm" style={{ color: "#6b6b88", fontFamily: "JetBrains Mono,monospace" }}>Gestionado por Admin: {record.managedBy ?? "Rikardo"}</p>
-                                      <h3 className="text-xl font-extrabold" style={{ color: "#e8e8f0", fontFamily: "'Barlow Condensed', sans-serif" }}>Campeón: {record.champion}</h3>
+                                      <h3 className="text-xl font-extrabold" style={{ color: "#e8e8f0", fontFamily: "'Barlow Condensed', sans-serif" }}>CampeÃ³n: {record.champion}</h3>
                                       {record.runnerUp && (
-                                        <p className="text-sm mt-1" style={{ color: "#a0a0b8", fontFamily: "JetBrains Mono,monospace" }}>Subcampeón: {record.runnerUp}</p>
+                                        <p className="text-sm mt-1" style={{ color: "#a0a0b8", fontFamily: "JetBrains Mono,monospace" }}>SubcampeÃ³n: {record.runnerUp}</p>
                                       )}
                                     </div>
                           <div className="flex flex-col sm:items-end gap-3">
@@ -1283,7 +1315,7 @@ function HistorialView({ tournaments, history, onBack, onDeleteTournament, onUpd
                                     </div>
                                     <div className="lg:col-span-2 rounded-2xl p-4" style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)" }}>
                                       <p className="text-[10px] uppercase mb-2" style={{ color: "#6b6b88", fontFamily: "JetBrains Mono,monospace" }}>Participantes</p>
-                                      <div className="text-sm" style={{ color: "#c8c8d8", fontFamily: "JetBrains Mono,monospace" }}>{record.participants.join(" · ")}</div>
+                                      <div className="text-sm" style={{ color: "#c8c8d8", fontFamily: "JetBrains Mono,monospace" }}>{record.participants.join(" Â· ")}</div>
                                     </div>
                                     <div className="lg:col-span-2 rounded-2xl p-4" style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)", minHeight: "160px" }}>
                                       <p className="text-[10px] uppercase mb-2" style={{ color: "#6b6b88", fontFamily: "JetBrains Mono,monospace" }}>Victorias</p>
@@ -1302,7 +1334,7 @@ function HistorialView({ tournaments, history, onBack, onDeleteTournament, onUpd
                                     </div>
                                     <div className="rounded-2xl p-4" style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)" }}>
                                       <p className="text-[10px] uppercase mb-2" style={{ color: "#6b6b88", fontFamily: "JetBrains Mono,monospace" }}>Participantes</p>
-                                      <div className="text-sm" style={{ color: "#c8c8d8", fontFamily: "JetBrains Mono,monospace" }}>{record.participants.join(" · ")}</div>
+                                      <div className="text-sm" style={{ color: "#c8c8d8", fontFamily: "JetBrains Mono,monospace" }}>{record.participants.join(" Â· ")}</div>
                                     </div>
                                     {record.gameId === "azure" ? (
                                       <div className="lg:col-span-2 rounded-2xl p-4" style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)", minHeight: "160px" }}>
@@ -1322,7 +1354,7 @@ function HistorialView({ tournaments, history, onBack, onDeleteTournament, onUpd
                                     ) : record.gameId === "volley" ? (
                                       <div className="lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-4">
                                         <div className="rounded-2xl p-4" style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)" }}>
-                                          <p className="text-[10px] uppercase tracking-[0.25em] mb-2" style={{ color: "#6b6b88", fontFamily: "JetBrains Mono,monospace" }}>TÍTULOS INDIVIDUALES</p>
+                                          <p className="text-[10px] uppercase tracking-[0.25em] mb-2" style={{ color: "#6b6b88", fontFamily: "JetBrains Mono,monospace" }}>TÃTULOS INDIVIDUALES</p>
                                           <div className="space-y-3 text-sm" style={{ color: "#c8c8d8", fontFamily: "JetBrains Mono,monospace" }}>
                                             <div className="flex justify-between gap-2"><span>Mejor sacador</span><span className="font-semibold">{record.bestServer ?? "N/A"}</span></div>
                                             <div className="flex justify-between gap-2"><span>King of the Air</span><span className="font-semibold">{computeVolleyTrophyWinner(record, "points")}</span></div>
@@ -1331,7 +1363,7 @@ function HistorialView({ tournaments, history, onBack, onDeleteTournament, onUpd
                                           </div>
                                         </div>
                                         <div className="rounded-2xl p-4" style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)", minHeight: "160px" }}>
-                                          <p className="text-[10px] uppercase tracking-[0.25em] mb-2" style={{ color: "#6b6b88", fontFamily: "JetBrains Mono,monospace" }}>ESTADÍSTICAS DE VOLLEY</p>
+                                          <p className="text-[10px] uppercase tracking-[0.25em] mb-2" style={{ color: "#6b6b88", fontFamily: "JetBrains Mono,monospace" }}>ESTADÃSTICAS DE VOLLEY</p>
                                           <div className="text-sm space-y-3 max-h-72 overflow-y-auto" style={{ color: "#c8c8d8", fontFamily: "JetBrains Mono,monospace" }}>
                                             {record.participants.map((player) => {
                                               const stats = record.playerStats?.[player];
@@ -1371,7 +1403,7 @@ function HistorialView({ tournaments, history, onBack, onDeleteTournament, onUpd
                                   <p className="text-[10px] uppercase mb-3" style={{ color: "#6b6b88", fontFamily: "JetBrains Mono,monospace" }}>Editar resultados</p>
                                   <div className="grid gap-3 sm:grid-cols-2">
                                     <label className="text-sm" style={{ color: "#c8c8d8", fontFamily: "JetBrains Mono,monospace" }}>
-                                      Campeón
+                                      CampeÃ³n
                                       <input
                                         value={editChampion}
                                         onChange={(e) => setEditChampion(e.target.value)}
@@ -1380,7 +1412,7 @@ function HistorialView({ tournaments, history, onBack, onDeleteTournament, onUpd
                                       />
                                     </label>
                                     <label className="text-sm" style={{ color: "#c8c8d8", fontFamily: "JetBrains Mono,monospace" }}>
-                                      Subcampeón
+                                      SubcampeÃ³n
                                       <input
                                         value={editRunnerUp}
                                         onChange={(e) => setEditRunnerUp(e.target.value)}
@@ -1472,7 +1504,7 @@ function GlobalTable({ players, history }: { players: Player[]; history: Tournam
   return (
     <section className="rounded-2xl overflow-hidden" style={{ border: "1px solid rgba(124,58,237,0.35)", background: "linear-gradient(160deg, #0f0f1a 0%, #09090f 100%)", boxShadow: "0 0 80px rgba(124,58,237,0.18)" }}>
       <div className="px-6 pt-6 pb-4 flex items-center gap-3" style={{ borderBottom: "1px solid rgba(124,58,237,0.2)", background: "rgba(124,58,237,0.04)" }}>
-        <span className="text-3xl">🏆</span>
+        <span className="text-3xl">ðŸ†</span>
         <div>
           <h2 className="text-2xl font-extrabold leading-none" style={{ fontFamily: "'Barlow Condensed', sans-serif", color: "#a78bfa", textShadow: "0 0 24px rgba(124,58,237,0.5)" }}>RANKING GLOBAL</h2>
           <p className="text-xs mt-1" style={{ fontFamily: "JetBrains Mono,monospace", color: "#6b6b88" }}>Acumulado en {history.length} torneos guardados</p>
@@ -1482,7 +1514,7 @@ function GlobalTable({ players, history }: { players: Player[]; history: Tournam
         <table className="w-full">
           <thead>
             <tr style={{ borderBottom: "1px solid rgba(255,255,255,0.05)" }}>
-              {["#", "JUGADOR", "W", "L", "PARTIDAS", "WIN%", "TÍTULOS", "MVPs", "PARTIC.", ""].map((h, i) => (
+              {["#", "JUGADOR", "W", "L", "PARTIDAS", "WIN%", "TÃTULOS", "MVPs", "PARTIC.", ""].map((h, i) => (
                 <th key={i} className={`py-3 text-[10px] font-medium ${i === 0 ? "pl-6 pr-2 text-left w-10" : i === 1 ? "px-2 text-left" : i === 8 ? "px-6 text-right" : "px-4 text-center"}`}
                   style={{ color: "#6b6b88", fontFamily: "JetBrains Mono,monospace" }}>{h}</th>
               ))}
@@ -1546,7 +1578,7 @@ function TablasView({ players, history, onBack }: { players: Player[]; history: 
     <div className="min-h-screen bg-background px-4 sm:px-8 py-12" style={{ fontFamily: "'Barlow', sans-serif" }}>
       <div className="max-w-5xl mx-auto flex flex-col gap-8">
         <BackButton onClick={onBack} />
-        <SectionTitle sub={`${players.length} jugadores · ${history.length} torneos guardados`}>TABLAS DE POSICIONES</SectionTitle>
+        <SectionTitle sub={`${players.length} jugadores Â· ${history.length} torneos guardados`}>TABLAS DE POSICIONES</SectionTitle>
 
         <nav className="flex flex-wrap gap-2">
           <button onClick={() => setFilter(null)} className="px-3 py-1.5 rounded-xl text-sm font-semibold transition-all"
@@ -1569,7 +1601,7 @@ function TablasView({ players, history, onBack }: { players: Player[]; history: 
   );
 }
 
-// ─── Jugadores View ───────────────────────────────────────────────────────────
+// â”€â”€â”€ Jugadores View â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 function JugadoresView({ players, history, onPlayers, onDeletePlayer, onBack }: { players: Player[]; history: TournamentRecord[]; onPlayers: (players: Player[]) => void; onDeletePlayer: (name: string) => void; onBack: () => void }) {
   const [selected, setSelected] = useState<string | null>(null);
@@ -1705,7 +1737,7 @@ function JugadoresView({ players, history, onPlayers, onDeletePlayer, onBack }: 
   const updatePlayer = async (name: string, nextName: string) => {
     const trimmed = nextName.trim();
     if (!trimmed) {
-      setNameError("El nombre no puede estar vacío.");
+      setNameError("El nombre no puede estar vacÃ­o.");
       return;
     }
     if (players.some((p) => p.name.toLowerCase() === trimmed.toLowerCase() && p.name !== name)) {
@@ -1795,7 +1827,7 @@ function JugadoresView({ players, history, onPlayers, onDeletePlayer, onBack }: 
                 { label: "WIN RATE", value: `${d.rate}%`, color: d.rate >= 55 ? "#a78bfa" : d.rate >= 45 ? "#e8e8f0" : "#f87171" },
                 { label: "W / L", value: `${d.totalW} / ${d.totalL}`, color: "#e8e8f0" },
                 { label: "MVPs", value: d.totalMVP, color: "#fcd34d" },
-                { label: "TÍTULOS", value: d.totalTitles, color: "#fcd34d" },
+                { label: "TÃTULOS", value: d.totalTitles, color: "#fcd34d" },
               ].map(({ label, value, color }) => (
                 <div key={label} className="px-6 py-5" style={{ background: "#0f0f1a" }}>
                   <p className="text-[10px] mb-1" style={{ color: "#6b6b88", fontFamily: "JetBrains Mono,monospace" }}>{label}</p>
@@ -1811,7 +1843,7 @@ function JugadoresView({ players, history, onPlayers, onDeletePlayer, onBack }: 
                 if (!hasVolleyHistory) return null;
                 return (
                   <div className="rounded-[28px] p-5" style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)" }}>
-                    <p className="text-xs font-semibold tracking-widest uppercase mb-4" style={{ color: "#6b6b88", fontFamily: "JetBrains Mono,monospace" }}>TÍTULOS INDIVIDUALES</p>
+                    <p className="text-xs font-semibold tracking-widest uppercase mb-4" style={{ color: "#6b6b88", fontFamily: "JetBrains Mono,monospace" }}>TÃTULOS INDIVIDUALES</p>
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                       {[
                         { label: "MVP", value: volleyTitles.mvp },
@@ -1843,8 +1875,8 @@ function JugadoresView({ players, history, onPlayers, onDeletePlayer, onBack }: 
                       <span style={{ color: "#a3e635" }}>W {g.w}</span>
                       <span style={{ color: "#f87171" }}>L {g.l}</span>
                       <span style={{ color: rate >= 55 ? g.t.color : "#6b6b88" }}>{rate}%</span>
-                      {g.mvp > 0 && <span style={{ color: "#fcd34d" }}>⭐ {g.mvp} MVP</span>}
-                      {g.tournamentsWon > 0 && <span style={{ color: "#fcd34d" }}>🏆 ×{g.tournamentsWon}</span>}
+                      {g.mvp > 0 && <span style={{ color: "#fcd34d" }}>â­ {g.mvp} MVP</span>}
+                      {g.tournamentsWon > 0 && <span style={{ color: "#fcd34d" }}>ðŸ† Ã—{g.tournamentsWon}</span>}
                     </div>
                     <div style={{ width: "64px", height: "4px", borderRadius: "99px", background: "rgba(255,255,255,0.06)", overflow: "hidden", flexShrink: 0 }}>
                       <div style={{ height: "100%", width: `${rate}%`, background: `linear-gradient(90deg, ${g.t.color}60, ${g.t.color})`, borderRadius: "99px" }} />
@@ -1897,8 +1929,8 @@ function JugadoresView({ players, history, onPlayers, onDeletePlayer, onBack }: 
           ) : (
             <div className="grid gap-4 sm:grid-cols-[1fr_auto] items-center">
               <div>
-                <p className="text-sm font-semibold" style={{ color: "#e8e8f0" }}>Gestión de jugadores</p>
-                <p className="text-xs" style={{ color: "#6b6b88", fontFamily: "JetBrains Mono,monospace" }}>Inicia sesión como administrador para modificar datos, agregar y eliminar jugadores.</p>
+                <p className="text-sm font-semibold" style={{ color: "#e8e8f0" }}>GestiÃ³n de jugadores</p>
+                <p className="text-xs" style={{ color: "#6b6b88", fontFamily: "JetBrains Mono,monospace" }}>Inicia sesiÃ³n como administrador para modificar datos, agregar y eliminar jugadores.</p>
               </div>
               <div className="flex items-center gap-3">
                 <input
@@ -1992,7 +2024,7 @@ function JugadoresView({ players, history, onPlayers, onDeletePlayer, onBack }: 
                   {[
                     { label: "WR", value: `${d.rate}%`, color: d.rate >= 55 ? "#a78bfa" : "#e8e8f0" },
                     { label: "MVPs", value: d.totalMVP, color: "#fcd34d" },
-                    { label: "🏆", value: d.totalTitles, color: "#fcd34d" },
+                    { label: "ðŸ†", value: d.totalTitles, color: "#fcd34d" },
                   ].map(({ label, value, color }) => (
                     <div key={label} className="text-center py-2 rounded-lg" style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)" }}>
                       <p className="text-[10px]" style={{ color: "#6b6b88", fontFamily: "JetBrains Mono,monospace" }}>{label}</p>
@@ -2031,7 +2063,7 @@ function JugadoresView({ players, history, onPlayers, onDeletePlayer, onBack }: 
 
                 {confirmDelete === player.name && (
                   <div className="flex flex-col gap-3 p-3 rounded-2xl" style={{ background: "rgba(255,77,109,0.06)", border: "1px solid rgba(255,77,109,0.18)" }}>
-                    <p className="text-xs" style={{ color: "#ff8fa3", fontFamily: "JetBrains Mono,monospace" }}>¿Eliminar jugador? Esta acción no se puede deshacer.</p>
+                    <p className="text-xs" style={{ color: "#ff8fa3", fontFamily: "JetBrains Mono,monospace" }}>Â¿Eliminar jugador? Esta acciÃ³n no se puede deshacer.</p>
                     <div className="flex gap-2 flex-wrap">
                       <Ripple onClick={() => removePlayer(player.name)} color="rgba(255,77,109,0.2)"
                         className="px-3 py-2 rounded-xl text-xs font-semibold"
@@ -2055,7 +2087,7 @@ function JugadoresView({ players, history, onPlayers, onDeletePlayer, onBack }: 
   );
 }
 
-// ─── Reglas View ──────────────────────────────────────────────────────────────
+// â”€â”€â”€ Reglas View â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 function ReglasView({ onBack }: { onBack: () => void }) {
   const [open, setOpen] = useState<string | null>(TOURNAMENTS[0].id);
@@ -2075,7 +2107,7 @@ function ReglasView({ onBack }: { onBack: () => void }) {
                 <span className="text-2xl">{t.icon}</span>
                 <div>
                   <h3 className="text-lg font-extrabold leading-none" style={{ fontFamily: "'Barlow Condensed', sans-serif", color: t.color }}>{t.name.toUpperCase()}</h3>
-                  <p className="text-[11px] mt-0.5" style={{ color: "#6b6b88", fontFamily: "JetBrains Mono,monospace" }}>{t.tag} · {t.rules.format}</p>
+                  <p className="text-[11px] mt-0.5" style={{ color: "#6b6b88", fontFamily: "JetBrains Mono,monospace" }}>{t.tag} Â· {t.rules.format}</p>
                 </div>
               </div>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={t.color} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
@@ -2090,7 +2122,7 @@ function ReglasView({ onBack }: { onBack: () => void }) {
                   { label: "FORMATO", value: t.rules.format },
                   { label: "FORMATO DE PARTIDA", value: t.rules.matchFormat },
                   { label: "SISTEMA DE PUNTOS", value: t.rules.scoring },
-                  { label: "CLASIFICACIÓN Y ELIMINACIÓN", value: t.rules.advancement },
+                  { label: "CLASIFICACIÃ“N Y ELIMINACIÃ“N", value: t.rules.advancement },
                   { label: "DESEMPATES", value: t.rules.extra },
                 ].map(({ label, value }) => (
                   <div key={label}>
@@ -2129,7 +2161,7 @@ function ReglasView({ onBack }: { onBack: () => void }) {
   );
 }
 
-// ─── Admin View ───────────────────────────────────────────────────────────────
+// â”€â”€â”€ Admin View â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 const ADMIN_PINS: Record<string, string> = {
   "1325": "Rikardo",
@@ -2193,9 +2225,9 @@ function AdminView({ players, onPlayers, onDeletePlayer, onBack }: { players: Pl
       <div className="min-h-screen bg-background flex flex-col px-4 sm:px-8 py-12" style={{ fontFamily: "'Barlow', sans-serif" }}>
         <div className="max-w-md mx-auto w-full">
           <BackButton onClick={onBack} />
-          <SectionTitle sub="Área restringida — ingresa el PIN de administrador">ADMIN</SectionTitle>
+          <SectionTitle sub="Ãrea restringida â€” ingresa el PIN de administrador">ADMIN</SectionTitle>
           <div className="rounded-2xl p-8 flex flex-col gap-6" style={{ background: "linear-gradient(160deg, #0f0f1a, #09090f)", border: "1px solid rgba(255,77,109,0.3)", boxShadow: "0 0 60px rgba(255,77,109,0.1)" }}>
-            <div className="w-16 h-16 rounded-2xl flex items-center justify-center text-3xl mx-auto" style={{ background: "rgba(255,77,109,0.15)", border: "1px solid rgba(255,77,109,0.3)" }}>🔐</div>
+            <div className="w-16 h-16 rounded-2xl flex items-center justify-center text-3xl mx-auto" style={{ background: "rgba(255,77,109,0.15)", border: "1px solid rgba(255,77,109,0.3)" }}>ðŸ”</div>
             <div className="flex flex-col gap-3">
               <input
                 type="password" maxLength={6} value={pin}
@@ -2205,7 +2237,7 @@ function AdminView({ players, onPlayers, onDeletePlayer, onBack }: { players: Pl
                 className="w-full text-center text-2xl tracking-[0.5em] font-bold px-4 py-4 rounded-xl outline-none transition-all"
                 style={{ background: pinError ? "rgba(255,77,109,0.1)" : "rgba(255,255,255,0.04)", border: pinError ? "1px solid rgba(255,77,109,0.5)" : "1px solid rgba(255,255,255,0.1)", color: "#e8e8f0", fontFamily: "JetBrains Mono,monospace", caretColor: "#ff4d6d" }}
               />
-              {pinError && <p className="text-center text-sm" style={{ color: "#ff8fa3", fontFamily: "JetBrains Mono,monospace" }}>PIN incorrecto. Inténtalo de nuevo.</p>}
+              {pinError && <p className="text-center text-sm" style={{ color: "#ff8fa3", fontFamily: "JetBrains Mono,monospace" }}>PIN incorrecto. IntÃ©ntalo de nuevo.</p>}
             </div>
             <Ripple onClick={tryPin} color="rgba(255,255,255,0.15)"
               className="w-full py-3.5 rounded-xl text-center font-bold text-sm"
@@ -2222,7 +2254,7 @@ function AdminView({ players, onPlayers, onDeletePlayer, onBack }: { players: Pl
     <div className="min-h-screen bg-background px-4 sm:px-8 py-12" style={{ fontFamily: "'Barlow', sans-serif" }}>
       <div className="max-w-2xl mx-auto flex flex-col gap-8">
         <BackButton onClick={onBack} />
-        <SectionTitle sub="Panel de administración — gestión de jugadores">ADMIN</SectionTitle>
+        <SectionTitle sub="Panel de administraciÃ³n â€” gestiÃ³n de jugadores">ADMIN</SectionTitle>
 
         {/* Add player */}
         <div className="rounded-2xl p-6 flex flex-col gap-4" style={{ background: "linear-gradient(160deg, #0f0f1a, #09090f)", border: "1px solid rgba(163,230,53,0.3)", boxShadow: "0 0 40px rgba(163,230,53,0.08)" }}>
@@ -2326,18 +2358,20 @@ function AdminView({ players, onPlayers, onDeletePlayer, onBack }: { players: Pl
           ))}
         </div>
 
-        <p className="text-center text-xs" style={{ color: "#3a3a50", fontFamily: "JetBrains Mono,monospace" }}>PINs: Rikardo 1325 · Juan 2102 · Cámbialos en el código si es necesario</p>
+        <p className="text-center text-xs" style={{ color: "#3a3a50", fontFamily: "JetBrains Mono,monospace" }}>PINs: Rikardo 1325 Â· Juan 2102 Â· CÃ¡mbialos en el cÃ³digo si es necesario</p>
       </div>
     </div>
   );
 }
 
-// ─── Torneo (Crear) View ──────────────────────────────────────────────────────
+// â”€â”€â”€ Torneo (Crear) View â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 type TorneoPhase = "setup" | "liguilla" | "bracket";
 
 interface BracketSlot { player: string | null; winner?: boolean }
 interface BracketState {
+  qf1?: [BracketSlot, BracketSlot];
+  qf2?: [BracketSlot, BracketSlot];
   sf1: [BracketSlot, BracketSlot];
   sf2: [BracketSlot, BracketSlot];
   final: [BracketSlot, BracketSlot];
@@ -2384,7 +2418,23 @@ function BracketView({ bracket, setBracket, standings, color, glow, border, isRi
       const match = prev[matchKey] as [BracketSlot, BracketSlot];
       const loser = match.find((s) => s.player !== winner)?.player ?? null;
 
-      if (matchKey === "sf1") {
+      if (matchKey === "qf1") {
+        (next.qf1 as [BracketSlot, BracketSlot]) = [{ player: match[0].player, winner: match[0].player === winner }, { player: match[1].player, winner: match[1].player === winner }];
+        const insertInSemis = (slot: [BracketSlot, BracketSlot]) => {
+          const emptyIndex = slot.findIndex((s) => !s.player);
+          if (emptyIndex !== -1) slot[emptyIndex] = { player: winner };
+        };
+        insertInSemis(next.sf1);
+        if (!next.sf1.some((s) => s.player === winner)) insertInSemis(next.sf2);
+      } else if (matchKey === "qf2") {
+        (next.qf2 as [BracketSlot, BracketSlot]) = [{ player: match[0].player, winner: match[0].player === winner }, { player: match[1].player, winner: match[1].player === winner }];
+        const insertInSemis = (slot: [BracketSlot, BracketSlot]) => {
+          const emptyIndex = slot.findIndex((s) => !s.player);
+          if (emptyIndex !== -1) slot[emptyIndex] = { player: winner };
+        };
+        insertInSemis(next.sf2);
+        if (!next.sf2.some((s) => s.player === winner)) insertInSemis(next.sf1);
+      } else if (matchKey === "sf1") {
         (next.sf1 as [BracketSlot, BracketSlot]) = [{ player: match[0].player, winner: match[0].player === winner }, { player: match[1].player, winner: match[1].player === winner }];
         next.final = [{ player: winner }, next.final[1]];
         next.third = [{ player: loser }, next.third[1]];
@@ -2451,7 +2501,7 @@ function BracketView({ bracket, setBracket, standings, color, glow, border, isRi
 
   const hasSF1Winner = bracket.final[0].player !== null;
   const hasSF2Winner = bracket.final[1].player !== null;
-  const finalEnabled = isRivals || isAzure || isVolley || (hasSF1Winner && hasSF2Winner);
+  const finalEnabled = isRivals || isAzure || isVolley || isClashRoyale || (!!bracket.final[0].player && !!bracket.final[1].player);
   const seeds = isRivals || isAzure || isVolley ? standings.slice(0, 2) : standings.slice(0, 4);
   const homePlayer = bracket.final[0].player;
   const awayPlayer = bracket.final[1].player;
@@ -2481,10 +2531,10 @@ function BracketView({ bracket, setBracket, standings, color, glow, border, isRi
     <div className="flex flex-col gap-8">
       {/* Seeds */}
       <div className="rounded-xl p-4 flex flex-wrap gap-2" style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)" }}>
-        <p className="w-full text-[10px] tracking-widest mb-2" style={{ color: "#6b6b88", fontFamily: "JetBrains Mono,monospace" }}>{isRivals || isAzure ? "FINALISTAS" : "CLASIFICACIÓN LIGUILLA"}</p>
+        <p className="w-full text-[10px] tracking-widest mb-2" style={{ color: "#6b6b88", fontFamily: "JetBrains Mono,monospace" }}>{isRivals || isAzure ? "FINALISTAS" : "CLASIFICACIÃ“N LIGUILLA"}</p>
         {seeds.map((s, i) => (
           <div key={s.player} className="flex items-center gap-2 px-3 py-1.5 rounded-lg" style={{ background: `${color}15`, border: `1px solid ${border}` }}>
-            <span className="text-xs font-bold" style={{ color, fontFamily: "JetBrains Mono,monospace" }}>{i + 1}°</span>
+            <span className="text-xs font-bold" style={{ color, fontFamily: "JetBrains Mono,monospace" }}>{i + 1}Â°</span>
             <span className="text-sm font-semibold" style={{ color: "#e8e8f0" }}>{s.player}</span>
             <span className="text-xs" style={{ color: "#6b6b88", fontFamily: "JetBrains Mono,monospace" }}>{isClashRoyale ? `${(s as any).crownDiff ?? 0} dif` : isRivals ? `${(s as any).rndDiff ?? 0} dif` : isVolley ? `${(s as any).pf ?? 0}pf` : `${s.pts ?? 0}pts`}</span>
           </div>
@@ -2496,7 +2546,13 @@ function BracketView({ bracket, setBracket, standings, color, glow, border, isRi
         <div className="flex gap-12 items-center min-w-max px-2">
           {!isRivals && !isAzure && (
             <>
-              {/* Semis */}
+              {(bracket.qf1 || bracket.qf2) && (
+                <div className="flex flex-col gap-6">
+                  <p className="text-[10px] tracking-widest text-center mb-2" style={{ color: "#6b6b88", fontFamily: "JetBrains Mono,monospace" }}>CUARTOS</p>
+                  {bracket.qf1 && <MatchCard home={bracket.qf1[0].player} away={bracket.qf1[1].player} color={color} onWin={(w) => handleWin("qf1", w)} />}
+                  {bracket.qf2 && <MatchCard home={bracket.qf2[0].player} away={bracket.qf2[1].player} color={color} onWin={(w) => handleWin("qf2", w)} />}
+                </div>
+              )}
               <div className="flex flex-col gap-6">
                 <p className="text-[10px] tracking-widest text-center mb-2" style={{ color: "#6b6b88", fontFamily: "JetBrains Mono,monospace" }}>SEMIFINALES</p>
                 <MatchCard home={bracket.sf1[0].player} away={bracket.sf1[1].player} color={color} onWin={(w) => handleWin("sf1", w)} />
@@ -2563,8 +2619,8 @@ function BracketView({ bracket, setBracket, standings, color, glow, border, isRi
             )}
             {bracket.champion && (
               <div className="text-center py-3 px-5 rounded-xl" style={{ background: `${color}20`, border: `1px solid ${border}` }}>
-                <p className="text-[10px] mb-1" style={{ color: "#6b6b88", fontFamily: "JetBrains Mono,monospace" }}>CAMPEÓN</p>
-                <p className="text-xl font-extrabold" style={{ color, fontFamily: "'Barlow Condensed', sans-serif" }}>🏆 {bracket.champion}</p>
+                <p className="text-[10px] mb-1" style={{ color: "#6b6b88", fontFamily: "JetBrains Mono,monospace" }}>CAMPEÃ“N</p>
+                <p className="text-xl font-extrabold" style={{ color, fontFamily: "'Barlow Condensed', sans-serif" }}>ðŸ† {bracket.champion}</p>
               </div>
             )}
           </div>
@@ -2578,7 +2634,7 @@ function BracketView({ bracket, setBracket, standings, color, glow, border, isRi
               <MatchCard home={bracket.third[0].player} away={bracket.third[1].player} color={color} onWin={(w) => handleWin("third", w)} />
               {(bracket.third[0] as BracketSlot & { winner?: boolean }).winner !== undefined && (
                 <div className="flex items-center gap-2 px-3 py-2 rounded-lg" style={{ background: `${color}10`, border: `1px solid ${border}` }}>
-                  <span style={{ color, fontFamily: "JetBrains Mono,monospace", fontSize: "11px" }}>🥉 {bracket.third.find(s => s.winner)?.player}</span>
+                  <span style={{ color, fontFamily: "JetBrains Mono,monospace", fontSize: "11px" }}>ðŸ¥‰ {bracket.third.find(s => s.winner)?.player}</span>
                 </div>
               )}
             </div>
@@ -2593,7 +2649,7 @@ function TorneoView({ players, history, onBack, onSavePlayers, onSaveTournament 
   const [phase, setPhase] = useState<TorneoPhase>("setup");
   const [gameId, setGameId] = useState<string | null>(null);
   const [selectedPlayers, setSelectedPlayers] = useState<string[]>([]);
-  const [format, setFormat] = useState<"liguilla" | "liguilla+elim">("liguilla+elim");
+  const [format, setFormat] = useState<"liguilla" | "liguilla+elim" | "direct">("liguilla+elim");
   const [useIdaVuelta, setUseIdaVuelta] = useState(false);
   const [results, setResults] = useState<Record<string, string>>({});
   const [teamScores, setTeamScores] = useState<Record<string, { home: number | null; away: number | null }>>({});
@@ -2623,8 +2679,106 @@ function TorneoView({ players, history, onBack, onSavePlayers, onSaveTournament 
   const isAzure = game?.id === "azure";
   const isVolley = game?.id === "volley";
   const isClashRoyale = game?.id === "clashroyale";
+  const isCobblemon = game?.id === "cobblemon";
   const isTeamSport = isRivals || isAzure || isVolley;
   const showIdaVueltaToggle = isTeamSport;
+
+  const getPlayerElo = (playerName: string) => {
+    return players.find((p) => p.name === playerName)?.elo ?? Number.POSITIVE_INFINITY;
+  };
+
+  const shuffleArray = <T,>(items: T[]) => {
+    const copy = [...items];
+    for (let i = copy.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [copy[i], copy[j]] = [copy[j], copy[i]];
+    }
+    return copy;
+  };
+
+  const buildCobblemonBracket = (selectedPlayers: string[]): BracketState => {
+    const playersByElo = [...selectedPlayers].sort((a, b) => getPlayerElo(a) - getPlayerElo(b) || a.localeCompare(b));
+    const shuffled = shuffleArray(selectedPlayers);
+
+    if (shuffled.length === 5) {
+      const wildcardPlayers = playersByElo.slice(0, 2);
+      const directPlayers = shuffleArray(playersByElo.slice(2));
+      const positions = [
+        { round: "sf1", slot: 0 },
+        { round: "sf1", slot: 1 },
+        { round: "sf2", slot: 0 },
+        { round: "sf2", slot: 1 },
+      ];
+      const wildcardIndex = Math.floor(Math.random() * positions.length);
+      const targetPositions = positions.filter((_, index) => index !== wildcardIndex);
+      const sf1: [BracketSlot, BracketSlot] = [{ player: null }, { player: null }];
+      const sf2: [BracketSlot, BracketSlot] = [{ player: null }, { player: null }];
+
+      targetPositions.forEach((position, index) => {
+        const player = directPlayers[index];
+        if (position.round === "sf1") sf1[position.slot] = { player };
+        else sf2[position.slot] = { player };
+      });
+
+      return {
+        qf1: [{ player: wildcardPlayers[0] }, { player: wildcardPlayers[1] }],
+        sf1,
+        sf2,
+        final: [{ player: null }, { player: null }],
+        third: [{ player: null }, { player: null }],
+        finalSeries: [],
+        champion: null,
+      };
+    }
+
+    if (shuffled.length === 6) {
+      const [bye1, bye2, qf1a, qf1b, qf2a, qf2b] = shuffled;
+      return {
+        qf1: [{ player: qf1a }, { player: qf1b }],
+        qf2: [{ player: qf2a }, { player: qf2b }],
+        sf1: [{ player: bye1 }, { player: null }],
+        sf2: [{ player: bye2 }, { player: null }],
+        final: [{ player: null }, { player: null }],
+        third: [{ player: null }, { player: null }],
+        finalSeries: [],
+        champion: null,
+      };
+    }
+
+    if (shuffled.length === 4) {
+      const [a, b, c, d] = shuffled;
+      return {
+        sf1: [{ player: a }, { player: b }],
+        sf2: [{ player: c }, { player: d }],
+        final: [{ player: null }, { player: null }],
+        third: [{ player: null }, { player: null }],
+        finalSeries: [],
+        champion: null,
+      };
+    }
+
+    if (shuffled.length === 2) {
+      return {
+        sf1: [{ player: null }, { player: null }],
+        sf2: [{ player: null }, { player: null }],
+        final: [{ player: shuffled[0] }, { player: shuffled[1] }],
+        third: [{ player: null }, { player: null }],
+        finalSeries: [],
+        champion: null,
+      };
+    }
+
+    // Fallback for unsupported player counts
+    const [a, b, c, d] = [...shuffled, null, null] as [string, string, string, string];
+    return {
+      sf1: [{ player: a }, { player: b }],
+      sf2: [{ player: c }, { player: d }],
+      final: [{ player: null }, { player: null }],
+      third: [{ player: null }, { player: null }],
+      finalSeries: [],
+      champion: null,
+    };
+  };
   const useHomeAndAway = showIdaVueltaToggle && useIdaVuelta;
   const rivalsTeams = isTeamSport ? buildRivalsTeams(selectedPlayers) : [];
   const teamNames = rivalsTeams.map((t) => t.team);
@@ -2773,7 +2927,7 @@ function TorneoView({ players, history, onBack, onSavePlayers, onSaveTournament 
       {showVolleyPanel ? (
         <div className="w-96 rounded-[32px] p-5" style={{ background: "rgba(15,15,26,0.95)", border: "1px solid rgba(255,255,255,0.08)", boxShadow: "0 30px 100px rgba(0,0,0,0.25)", maxHeight: "calc(100vh - 120px)" }}>
           <div className="flex items-center justify-between gap-3 mb-4">
-            <p className="text-xs font-semibold tracking-[0.24em] uppercase" style={{ color: "#bef264", fontFamily: "JetBrains Mono,monospace" }}>Volley — Pts · Asistencias · Bloqueos · MVP</p>
+            <p className="text-xs font-semibold tracking-[0.24em] uppercase" style={{ color: "#bef264", fontFamily: "JetBrains Mono,monospace" }}>Volley â€” Pts Â· Asistencias Â· Bloqueos Â· MVP</p>
             <button onClick={() => setShowVolleyPanel(false)} className="text-[11px] font-semibold uppercase rounded-full px-3 py-1" style={{ background: "rgba(255,255,255,0.06)", color: "#a0a0b8", fontFamily: "JetBrains Mono,monospace" }}>Ocultar</button>
           </div>
           <div className="grid gap-3 mb-4">
@@ -2848,6 +3002,8 @@ function TorneoView({ players, history, onBack, onSavePlayers, onSaveTournament 
       const top2 = standings.slice(0, 2).map((s) => s.player);
       const [s1, s2] = top2;
       setBracket({ sf1: [{ player: null }, { player: null }], sf2: [{ player: null }, { player: null }], final: [{ player: s1 }, { player: s2 }], third: [{ player: null }, { player: null }], finalSeries: Array.from({ length: 2 }, () => ({ home: null, away: null })), champion: null });
+    } else if (isCobblemon || format === "direct") {
+      setBracket(buildCobblemonBracket(selectedPlayers));
     } else {
       const top4 = standings.slice(0, 4).map((s) => s.player);
       const [s1, s2, s3, s4] = top4;
@@ -2951,10 +3107,11 @@ function TorneoView({ players, history, onBack, onSavePlayers, onSaveTournament 
         }
       }
 
-      const bracketKeys: Array<keyof BracketState> = ["sf1", "sf2", "third"];
-      for (const key of bracketKeys) {
-        const match = bracket[key];
-        if (!match[0].player || !match[1].player) continue;
+      const bracketMatchKeys = ["qf1", "qf2", "sf1", "sf2", "third", "final"] as const;
+      type BracketMatchKey = typeof bracketMatchKeys[number];
+      for (const key of bracketMatchKeys) {
+        const match = bracket[key] as [BracketSlot, BracketSlot] | undefined;
+        if (!match || !match[0].player || !match[1].player) continue;
         if (match[0].winner === true && match[1].winner === false) {
           addResult(match[0].player, match[1].player);
         } else if (match[1].winner === true && match[0].winner === false) {
@@ -3082,10 +3239,10 @@ function TorneoView({ players, history, onBack, onSavePlayers, onSaveTournament 
 
           {/* Step 1: Game */}
           <div className="rounded-2xl p-6 flex flex-col gap-4" style={{ background: "linear-gradient(160deg, #0f0f1a, #09090f)", border: "1px solid rgba(255,255,255,0.08)" }}>
-            <p className="text-[10px] tracking-widest font-semibold" style={{ color: "#6b6b88", fontFamily: "JetBrains Mono,monospace" }}>1 · SELECCIONA EL JUEGO</p>
+            <p className="text-[10px] tracking-widest font-semibold" style={{ color: "#6b6b88", fontFamily: "JetBrains Mono,monospace" }}>1 Â· SELECCIONA EL JUEGO</p>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
               {TOURNAMENTS.map((t) => (
-                <Ripple key={t.id} color={`${t.color}20`} onClick={() => { setGameId(t.id); setUseIdaVuelta(false); }}
+                <Ripple key={t.id} color={`${t.color}20`} onClick={() => { setGameId(t.id); setUseIdaVuelta(false); if (t.id !== 'cobblemon' && format === 'direct') setFormat('liguilla+elim'); if (t.id === 'cobblemon') setFormat('direct'); }}
                   className="rounded-xl p-4 flex flex-col items-center gap-2 text-center transition-all"
                   style={{ background: gameId === t.id ? `${t.color}15` : "rgba(255,255,255,0.03)", border: gameId === t.id ? `1px solid ${t.border}` : "1px solid rgba(255,255,255,0.07)", boxShadow: gameId === t.id ? `0 0 24px ${t.glow}` : "none" }}>
                   <span className="text-2xl">{t.icon}</span>
@@ -3097,7 +3254,7 @@ function TorneoView({ players, history, onBack, onSavePlayers, onSaveTournament 
 
           {/* Step 2: Players */}
           <div className="rounded-2xl p-6 flex flex-col gap-4" style={{ background: "linear-gradient(160deg, #0f0f1a, #09090f)", border: "1px solid rgba(255,255,255,0.08)" }}>
-            <p className="text-[10px] tracking-widest font-semibold" style={{ color: "#6b6b88", fontFamily: "JetBrains Mono,monospace" }}>2 · JUGADORES PARTICIPANTES</p>
+            <p className="text-[10px] tracking-widest font-semibold" style={{ color: "#6b6b88", fontFamily: "JetBrains Mono,monospace" }}>2 Â· JUGADORES PARTICIPANTES</p>
             <div className="flex flex-wrap gap-2">
                 {players.map((p) => {
                   const sel = selectedPlayers.includes(p.name);
@@ -3122,8 +3279,15 @@ function TorneoView({ players, history, onBack, onSavePlayers, onSaveTournament 
                 </div>
               )}
             <div className="flex gap-3 flex-wrap">
-              {([["liguilla", "Solo Liguilla", "Todos vs todos, se declara campeón al primero de la tabla"], ["liguilla+elim", "Liguilla + Eliminación", "Liguilla → Top 4 → Semis → Final"]] as const).map(([val, label, desc]) => (
-                <Ripple key={val} color="rgba(245,158,11,0.15)" onClick={() => setFormat(val)}
+              {(
+                game?.id === 'cobblemon'
+                  ? [["direct", "Eliminación directa", "Bracket directo sin liguilla"]] as const
+                  : [
+                      ["liguilla", "Solo Liguilla", "Todos vs todos, se declara campeón al primero de la tabla"],
+                      ["liguilla+elim", "Liguilla + Eliminación", "Liguilla → Top 4 → Semis → Final"],
+                    ] as const
+              ).map(([val, label, desc]) => (
+                <Ripple key={val} color="rgba(245,158,11,0.15)" onClick={() => setFormat(val as "liguilla" | "liguilla+elim" | "direct")}
                   className="flex-1 rounded-xl p-4 transition-all"
                   style={{ background: format === val ? "rgba(245,158,11,0.12)" : "rgba(255,255,255,0.03)", border: format === val ? "1px solid rgba(245,158,11,0.4)" : "1px solid rgba(255,255,255,0.07)" }}>
                   <p className="font-bold text-sm mb-1" style={{ color: format === val ? "#fcd34d" : "#a0a0b8", fontFamily: "'Barlow Condensed', sans-serif", fontSize: "15px" }}>{label.toUpperCase()}</p>
@@ -3131,12 +3295,20 @@ function TorneoView({ players, history, onBack, onSavePlayers, onSaveTournament 
                 </Ripple>
               ))}
             </div>
+            {game?.id === 'cobblemon' && (
+              <div className="rounded-2xl p-4 mt-4" style={{ background: "rgba(251,113,133,0.08)", border: "1px solid rgba(251,113,133,0.25)" }}>
+                <p className="text-sm font-semibold" style={{ color: "#fb7185", fontFamily: "'Barlow Condensed', sans-serif" }}>Cobblemon es un torneo de eliminación directa</p>
+                <p className="text-xs mt-2" style={{ color: "#f5c6d1", fontFamily: "JetBrains Mono,monospace" }}>
+                  No hay liguilla. Selecciona jugadores y genera el bracket directo: 5 jugadores usan wildcard entre los dos de menor ELO; 6 jugadores usan 2 byes y avanzan directo a semifinales.
+                </p>
+              </div>
+            )}
 
             {/* Edición y Admin gestor: ahora asignados automáticamente; inputs removidos */}
 
             {showIdaVueltaToggle && (
               <div className="flex flex-col gap-3 pt-2">
-                <p className="text-[10px] tracking-widest font-semibold" style={{ color: "#6b6b88", fontFamily: "JetBrains Mono,monospace" }}>3 · FORMATO DE LIGUILLA</p>
+                <p className="text-[10px] tracking-widest font-semibold" style={{ color: "#6b6b88", fontFamily: "JetBrains Mono,monospace" }}>3 Â· FORMATO DE LIGUILLA</p>
                 <div className="flex flex-wrap gap-3">
                   <Ripple onClick={() => setUseIdaVuelta(false)} color="rgba(255,255,255,0.08)"
                     className="flex-1 rounded-xl p-3 transition-all"
@@ -3156,7 +3328,11 @@ function TorneoView({ players, history, onBack, onSavePlayers, onSaveTournament 
           </div>
 
           <Ripple
-            onClick={() => { if (gameId && selectedPlayers.length >= 2) setPhase("liguilla"); }}
+            onClick={() => {
+              if (!gameId || selectedPlayers.length < 2) return;
+              if (format === 'direct') advanceToBracket();
+              else setPhase('liguilla');
+            }}
             color="rgba(255,255,255,0.15)"
             className="py-4 rounded-2xl text-center font-bold transition-all"
             style={{
@@ -3166,11 +3342,11 @@ function TorneoView({ players, history, onBack, onSavePlayers, onSaveTournament 
               fontFamily: "'Barlow Condensed', sans-serif", fontSize: "18px", letterSpacing: "0.08em",
               cursor: gameId && selectedPlayers.length >= 2 ? "pointer" : "not-allowed",
             }}>
-            GENERAR LIGUILLA →
+            {format === 'direct' ? 'GENERAR BRACKET â†’' : 'GENERAR LIGUILLA â†’'}
           </Ripple>
           {isRivals && selectedPlayers.length > 0 && (
             <p className="text-[11px] mt-2" style={{ color: "#fbbf24", fontFamily: "JetBrains Mono,monospace" }}>
-              Rivals requiere duplas; la ruleta define equipos y posición. Si hay 7 jugadores, se aplican las reglas especiales de 2v1.
+              Rivals requiere duplas; la ruleta define equipos y posiciÃ³n. Si hay 7 jugadores, se aplican las reglas especiales de 2v1.
             </p>
           )}
         </div>
@@ -3192,14 +3368,14 @@ function TorneoView({ players, history, onBack, onSavePlayers, onSaveTournament 
 
           <div className="flex items-center gap-3">
             <span className="text-3xl">{game.icon}</span>
-            <SectionTitle sub={`${selectedPlayers.length} jugadores · ${rounds.length} jornadas`}>LIGUILLA — {game.name.toUpperCase()}</SectionTitle>
+            <SectionTitle sub={`${selectedPlayers.length} jugadores Â· ${rounds.length} jornadas`}>LIGUILLA â€” {game.name.toUpperCase()}</SectionTitle>
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
             {/* Standings */}
             <div className="lg:col-span-2 rounded-2xl overflow-hidden" style={{ border: `1px solid ${game.border}`, background: "linear-gradient(160deg, #0f0f1a, #09090f)" }}>
               <div className="px-5 py-4" style={{ borderBottom: `1px solid ${game.border}`, background: game.bgStripe }}>
-                <p className="text-[11px] tracking-widest font-semibold" style={{ color: game.textColor, fontFamily: "JetBrains Mono,monospace" }}>CLASIFICACIÓN</p>
+                <p className="text-[11px] tracking-widest font-semibold" style={{ color: game.textColor, fontFamily: "JetBrains Mono,monospace" }}>CLASIFICACIÃ“N</p>
               </div>
               <table className="w-full">
                 <thead>
@@ -3255,7 +3431,7 @@ function TorneoView({ players, history, onBack, onSavePlayers, onSaveTournament 
               </table>
               {format === "liguilla+elim" && standings.length >= (isRivals || isAzure || isVolley ? 2 : 4) && (
                 <div className="px-5 py-3" style={{ borderTop: "1px solid rgba(255,255,255,0.05)" }}>
-                  <p className="text-[10px]" style={{ color: "#6b6b88", fontFamily: "JetBrains Mono,monospace" }}>{isRivals || isAzure || isVolley ? "↑ Top 2 avanzan a final" : "↑ Top 4 avanzan a eliminación"}</p>
+                  <p className="text-[10px]" style={{ color: "#6b6b88", fontFamily: "JetBrains Mono,monospace" }}>{isRivals || isAzure || isVolley ? "â†‘ Top 2 avanzan a final" : "â†‘ Top 4 avanzan a eliminaciÃ³n"}</p>
                 </div>
               )}
             </div>
@@ -3346,7 +3522,7 @@ function TorneoView({ players, history, onBack, onSavePlayers, onSaveTournament 
                   cursor: allPlayed ? "pointer" : "not-allowed",
                 }}
                 disabled={!allPlayed}>
-                CONTINUAR → {(isRivals || isAzure) ? standings.slice(0, 2).map((s) => s.player).join(", ") : standings.slice(0, 4).map((s) => s.player).join(", ")}
+                CONTINUAR â†’ {(isRivals || isAzure) ? standings.slice(0, 2).map((s) => s.player).join(", ") : standings.slice(0, 4).map((s) => s.player).join(", ")}
               </button>
               {!allPlayed && (
                 <p className="text-xs" style={{ color: "#f87171", fontFamily: "JetBrains Mono,monospace" }}>Completa los resultados de todas las jornadas antes de continuar.</p>
@@ -3365,13 +3541,13 @@ function TorneoView({ players, history, onBack, onSavePlayers, onSaveTournament 
           {isRivals && renderKillsPanel()}
           {isAzure && renderAzurePanel()}
           {game?.id === "volley" && renderVolleyPanel()}
-          <button onClick={() => setPhase("liguilla")} className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold w-fit"
+          <button onClick={() => setPhase(format === 'direct' ? "setup" : "liguilla")} className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold w-fit"
             style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.09)", color: "#a0a0b8" }}>
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
-            LIGUILLA
+            {format === 'direct' ? 'SETUP' : 'LIGUILLA'}
           </button>
 
-          <SectionTitle sub="Haz clic en el jugador que ganó cada enfrentamiento">CUADRO DE ELIMINACIÓN — {game.name.toUpperCase()}</SectionTitle>
+          <SectionTitle sub="Haz clic en el jugador que ganÃ³ cada enfrentamiento">CUADRO DE ELIMINACIÃ“N â€” {game.name.toUpperCase()}</SectionTitle>
 
           <div className="rounded-2xl p-6" style={{ background: "linear-gradient(160deg, #0f0f1a, #09090f)", border: `1px solid ${game.border}`, boxShadow: `0 0 60px ${game.glow}` }}>
             <BracketView bracket={bracket} setBracket={setBracket} standings={standings} color={game.color} glow={game.glow} border={game.border} isRivals={isRivals} isAzure={isAzure} isVolley={isVolley} isClashRoyale={isClashRoyale} />
@@ -3380,7 +3556,7 @@ function TorneoView({ players, history, onBack, onSavePlayers, onSaveTournament 
             <div className="rounded-2xl p-5 border border-white/10 bg-[#0f0f1a]">
               <p className="text-sm font-semibold mb-3" style={{ color: "#fcd34d", fontFamily: "'Barlow Condensed', sans-serif" }}>FINALIZAR TORNEO</p>
               <p className="text-xs mb-3" style={{ color: "#a0a0b8", fontFamily: "JetBrains Mono,monospace" }}>
-                Campeón: <span style={{ color: game.color, fontWeight: 700 }}>{bracket.champion}</span>
+                CampeÃ³n: <span style={{ color: game.color, fontWeight: 700 }}>{bracket.champion}</span>
               </p>
               <div className="flex flex-col sm:flex-row gap-3">
                 <Ripple onClick={saveTournament} color="rgba(255,255,255,0.15)"
@@ -3395,10 +3571,10 @@ function TorneoView({ players, history, onBack, onSavePlayers, onSaveTournament 
             <div className="fixed inset-0 z-50 flex items-center justify-center px-4 py-6 bg-black/40">
               <div className="w-full max-w-md rounded-[32px] p-6 bg-[#0b1220] border border-white/10 shadow-2xl">
                 <p className="text-xs uppercase tracking-[0.24em] mb-3" style={{ color: "#bef264", fontFamily: "JetBrains Mono,monospace" }}>TORNEO GUARDADO</p>
-                <h3 className="text-2xl font-extrabold mb-4" style={{ color: "#e8e8f0", fontFamily: "'Barlow Condensed', sans-serif" }}>¡Torneo guardado!</h3>
-                <p className="text-sm leading-relaxed mb-6" style={{ color: "#c8c8d8", fontFamily: "JetBrains Mono,monospace" }}>Las estadísticas se almacenaron correctamente. Al cerrar este mensaje volverás al menú principal.</p>
+                <h3 className="text-2xl font-extrabold mb-4" style={{ color: "#e8e8f0", fontFamily: "'Barlow Condensed', sans-serif" }}>Â¡Torneo guardado!</h3>
+                <p className="text-sm leading-relaxed mb-6" style={{ color: "#c8c8d8", fontFamily: "JetBrains Mono,monospace" }}>Las estadÃ­sticas se almacenaron correctamente. Al cerrar este mensaje volverÃ¡s al menÃº principal.</p>
                 <button onClick={() => { setSavedTournament(false); onBack(); }} className="w-full rounded-2xl py-3 text-sm font-bold" style={{ background: "rgba(124,58,237,0.22)", color: "#a78bfa", fontFamily: "'Barlow Condensed', sans-serif", border: "1px solid rgba(124,58,237,0.35)" }}>
-                  Cerrar y volver al menú
+                  Cerrar y volver al menÃº
                 </button>
               </div>
             </div>
@@ -3411,7 +3587,7 @@ function TorneoView({ players, history, onBack, onSavePlayers, onSaveTournament 
   return null;
 }
 
-// ─── App ─────────────────────────────────────────────────────────────────────
+// â”€â”€â”€ App â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 const PLAYER_STORAGE_KEY = "ladvzla_players";
 const TOURNAMENT_HISTORY_KEY = "ladvzla_tournament_history";
@@ -3569,7 +3745,7 @@ export default function App() {
         ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.2); }
       `}</style>
 
-      {view === "menu"      && <HomeMenu onNavigate={setView} />}
+      {view === "menu"      && <HomeMenu onNavigate={setView} playerCount={players.length} gameCount={TOURNAMENTS.length} />}
       {view === "tablas"    && <TablasView players={players} history={tournamentHistory} onBack={() => setView("menu")} />}
       {view === "jugadores" && <JugadoresView players={players} history={tournamentHistory} onPlayers={setPlayers} onDeletePlayer={handleDeletePlayer} onBack={() => setView("menu")} />}
       {view === "reglas"    && <ReglasView onBack={() => setView("menu")} />}
