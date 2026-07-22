@@ -132,44 +132,44 @@ const TOURNAMENTS: TournamentDef[] = [
     ],
     rules: {
       format: "Liguilla 2v2 + Final Mejor de 5",
-      matchFormat: "Partido Ãºnico en liguilla; final mejor de 5 en servidor E.E.U.U.",
-      scoring: "Victoria: 3 pts Â· Derrota: 0 pts",
-      advancement: "Top 4 avanzan a semis. Semis: 1Â°vs4Â°, 2Â°vs3Â°. Final mejor de 5.",
-      extra: "Triple empate se define por diferencia de rondas; si persiste, decide el enfrentamiento entre 2Â° y 3Â°.",
+      matchFormat: "Partido único en liguilla; final mejor de 5 en servidor E.E.U.U.",
+      scoring: "Victoria: 3 pts · Derrota: 0 pts",
+      advancement: "Top 4 avanzan a semis. Semis: 1° vs 4°, 2° vs 3°. Final mejor de 5.",
+      extra: "Triple empate se define por diferencia de rondas; si persiste, decide el enfrentamiento entre 2° y 3°.",
       sections: [
         {
           title: "Fase de liguilla",
           lines: [
-            "Partido Ãºnico cada enfrentamiento de dÃºos vs dÃºos.",
-            "La posiciÃ³n inicial de los equipos la definirÃ¡ la ruleta.",
-            "En caso de triple empate, se definirÃ¡ por diferencia de rondas.",
-            "En caso de empate en rondas, se definirÃ¡ en enfrentamiento entre el 2do y el 3ero.",
+            "Partido único cada enfrentamiento de dúos vs dúos.",
+            "La posición inicial de los equipos la definirá la ruleta.",
+            "En caso de triple empate, se definirá por diferencia de rondas.",
+            "En caso de empate en rondas, se definirá en enfrentamiento entre el 2° y el 3°.",
           ],
         },
         {
           title: "Fase final",
           lines: [
-            "Se jugarÃ¡ entre finalistas un mejor de 5 en servidor de estados unidos.",
+            "Se jugará entre finalistas un mejor de 5 en servidor de Estados Unidos.",
           ],
         },
         {
-          title: "Reglas bÃ¡sicas",
+          title: "Reglas básicas",
           lines: [
             "Partidas en servidor neutral (E.E.U.U.).",
             "Los equipos los decide la ruleta.",
             "No usar armas prohibidas.",
             "Respetar el orden de enfrentamientos (decide la ruleta).",
-            "En caso de tocar el mismo equipo en 2 torneos seguidos, al siguiente no podrÃ­an tocar juntos.",
+            "En caso de tocar el mismo equipo en 2 torneos seguidos, al siguiente no podrían tocar juntos.",
             "Tiempo infinito.",
-            "Solo jugar con las armas desbloqueadas (excepciÃ³n de armas explosivas).",
+            "Solo jugar con las armas desbloqueadas (excepción de armas explosivas).",
           ],
         },
         {
           title: "En caso de haber 7 jugadores",
           lines: [
-            "En 2 vs 1, el equipo dÃºo deberÃ¡ llegar 1x1 sin objeciÃ³n.",
-            "El solitario tiene opciÃ³n a botiquÃ­n si asÃ­ lo desea (sin importar si lo tienen o no).",
-            "El jugador que toque solo lo decidirÃ¡ la ruleta.",
+            "En 2 vs 1, el equipo dúo deberá llegar 1x1 sin objeción.",
+            "El solitario tiene opción a botiquín si así lo desea (sin importar si lo tienen o no).",
+            "El jugador que toque solo lo decidirá la ruleta.",
           ],
         },
         {
@@ -177,9 +177,9 @@ const TOURNAMENTS: TournamentDef[] = [
           lines: [
             "Lanzacohetes.",
             "Lanzagranadas.",
-            "BotiquÃ­n (dÃºo).",
+            "Botiquín (dúo).",
             "Minas y C4.",
-            "Minigun y armas exÃ³ticas como las de laser.",
+            "Minigun y armas exóticas como las de láser.",
           ],
         },
       ],
@@ -208,18 +208,18 @@ const TOURNAMENTS: TournamentDef[] = [
     rules: {
       format: "Liguilla ida y vuelta + Final ida y vuelta",
       matchFormat: "Fase de liga 2v2 a ida y vuelta. Final ida y vuelta con desempate por diferencia de goles.",
-      scoring: "Victoria: 3 pts Â· Empate: 1 pt Â· Derrota: 0 pts",
-      advancement: "Clasifican los 2 mejores dÃºos. Si la final queda 1-1, se define por diferencia de goles; si sigue igual, juego extra.",
-      extra: "La ruleta define los duelos y personajes. No se cambian despuÃ©s de que arranca la fase. Si falta un personaje, debe haber prueba; de lo contrario, derrota automÃ¡tica.",
+      scoring: "Victoria: 3 pts · Empate: 1 pt · Derrota: 0 pts",
+      advancement: "Clasifican los 2 mejores dúos. Si la final queda 1-1, se define por diferencia de goles; si sigue igual, juego extra.",
+      extra: "La ruleta define los duelos y personajes. No se cambian después de que arranca la fase. Si falta un personaje, debe haber prueba; de lo contrario, derrota automática.",
       sections: [
         {
           title: "Fase de liga",
           lines: [
             "Partidos 2v2 de ida y vuelta.",
-            "Clasifican los 2 mejores dÃºos.",
+            "Clasifican los 2 mejores dúos.",
             "El desempate en tabla es por diferencia de goles.",
-            "Si el desempate sigue igual, se define por duelo directo entre 2Â° y 3Â°.",
-            "La posiciÃ³n inicial la define la ruleta.",
+            "Si el desempate sigue igual, se define por duelo directo entre 2° y 3°.",
+            "La posición inicial la define la ruleta.",
           ],
         },
         {
@@ -231,21 +231,21 @@ const TOURNAMENTS: TournamentDef[] = [
           ],
         },
         {
-          title: "Reglas bÃ¡sicas",
+          title: "Reglas básicas",
           lines: [
-            "Servidor de E.E.U.U. salvo el caso de dÃºos del sur.",
-            "La ruleta decide los dÃºos y los personajes.",
+            "Servidor de E.E.U.U. salvo el caso de dúos del sur.",
+            "La ruleta decide los dúos y los personajes.",
             "No se cambian personajes una vez iniciada la fase.",
             "Si un equipo repite en dos torneos seguidos, no puede volver a coincidir en el siguiente.",
-            "Si no hay pruebas de un personaje no disponible, se declara derrota automÃ¡tica.",
+            "Si no hay pruebas de un personaje no disponible, se declara derrota automática.",
           ],
         },
         {
           title: "Sanciones",
           lines: [
             "Usar personaje distinto al asignado suma 3 goles al rival.",
-            "Equipo incompleto: 1 minuto fuera y balÃ³n para el rival.",
-            "No cumplir con la cuarta sanciÃ³n suma 2 goles al rival.",
+            "Equipo incompleto: 1 minuto fuera y balón para el rival.",
+            "No cumplir con la cuarta sanción suma 2 goles al rival.",
             "Demora: 30 segundos sin habilidades.",
             "Las sanciones pueden revisarse con VAR.",
           ],
@@ -279,42 +279,42 @@ const TOURNAMENTS: TournamentDef[] = [
     ],
     rules: {
       format: "Liguilla ida y vuelta + Final Mejor de 3",
-      matchFormat: "Partido ida y vuelta dÃºos vs dÃºos; final mejor de 3 sets",
-      scoring: "Victoria: W Â· Derrota: L Â· Diferencia de puntos para desempate",
-      advancement: "Clasifican los mejores dÃºos segÃºn la liguilla; la final determina el campeÃ³n al mejor de 3.",
+      matchFormat: "Partido ida y vuelta dúos vs dúos; final mejor de 3 sets",
+      scoring: "Victoria: W · Derrota: L · Diferencia de puntos para desempate",
+      advancement: "Clasifican los mejores dúos según la liguilla; la final determina el campeón al mejor de 3.",
       extra: "Ventaja de saque en la final para quien haya finalizado primero la liga; reglas de fairplay y sanciones aplican.",
       sections: [
         {
           title: "Fase de liga",
           lines: [
-            "Partido ida y vuelta dÃºos vs dÃºos.",
+            "Partido ida y vuelta dúos vs dúos.",
             "En caso de empate, se define por diferencia de puntos.",
-            "En caso de empate en puntos se define en un duelo de 2do vs 3ero.",
+            "En caso de empate en puntos se define en un duelo de 2° vs 3°.",
           ],
         },
         {
           title: "Fase final",
           lines: [
-            "Final al mejor de 3 sets para determinar el campeÃ³n.",
-            "Ventaja de saques en el 1er y 3er duelo (solo si se juegan) para quien finalizÃ³ primero la liga.",
+            "Final al mejor de 3 sets para determinar el campeón.",
+            "Ventaja de saques en el 1er y 3er duelo (solo si se juegan) para quien finalizó primero la liga.",
           ],
         },
         {
-          title: "Reglas bÃ¡sicas",
+          title: "Reglas básicas",
           lines: [
             "Equipos decide la ruleta.",
             "En liga solo puedes optar a un personaje de tu roster.",
             "Enfrentamientos decide la ruleta.",
-            "No se puede repetir dÃºo en 3 torneos seguidos.",
+            "No se puede repetir dúo en 3 torneos seguidos.",
             "No se pueden hacer puntos con un rival afk.",
             "No se puede abandonar la partida.",
-            "Entrar en un duelo mÃ¡ximo 5 minutos; fuera de ahÃ­ sanciÃ³n.",
-            "Cada rival tendrÃ¡ ventaja de saque una vez en liguilla.",
-            "Si el juego te da el saque y no corresponde, entrega el balÃ³n al rival.",
+            "Entrar en un duelo máximo 5 minutos; fuera de ahí sanción.",
+            "Cada rival tendrá ventaja de saque una vez en liguilla.",
+            "Si el juego te da el saque y no corresponde, entrega el balón al rival.",
             "En fase final puedes cambiar 1 vez tu personaje.",
-            "Si el rival no toma el balÃ³n en fairplay, no tiene derecho a pedir el punto.",
-            "No se cambia el personaje durante la fase (salvo excepciÃ³n permitida).",
-            "Diferencia de 18 puntos, capote automÃ¡tico.",
+            "Si el rival no toma el balón en fairplay, no tiene derecho a pedir el punto.",
+            "No se cambia el personaje durante la fase (salvo excepción permitida).",
+            "Diferencia de 18 puntos, capote automático.",
           ],
         },
         {
@@ -322,15 +322,15 @@ const TOURNAMENTS: TournamentDef[] = [
           lines: [
             "Impuntualidad: entrega 2 puntos al rival y castigo de habilidad por 10 puntos.",
             "Infringir una regla: entrega 6 puntos al rival.",
-            "Infringir dos reglas: entrega 10 puntos al rival y restricciÃ³n de habilidad.",
-            "Infringir tres o mÃ¡s reglas: pierde el duelo automÃ¡ticamente.",
-            "Cada infracciÃ³n puede ser revisada y corregida por el VAR.",
+            "Infringir dos reglas: entrega 10 puntos al rival y restricción de habilidad.",
+            "Infringir tres o más reglas: pierde el duelo automáticamente.",
+            "Cada infracción puede ser revisada y corregida por el VAR.",
           ],
         },
         {
-          title: "TÃ­tulos individuales",
+          title: "Títulos individuales",
           lines: [
-            "MVP del Torneo: Decidido por votaciÃ³n de los participantes.",
+            "MVP del Torneo: Decidido por votación de los participantes.",
             "King of the Court: Mejor Asistidor.",
             "King of the Wall: Mejor Bloqueador.",
             "King of the Air: Mejor Atacante (Spiker).",
@@ -413,20 +413,20 @@ const TOURNAMENTS: TournamentDef[] = [
     id: "cobblemon",
     name: "Cobblemon",
     tag: "DUELS",
-    color: "#fb7185",
-    glow: "rgba(251,113,133,0.22)",
-    border: "rgba(251,113,133,0.3)",
-    textColor: "#fda4af",
-    bgStripe: "rgba(251,113,133,0.04)",
+    color: "#d1d5db",
+    glow: "rgba(209,213,219,0.22)",
+    border: "rgba(209,213,219,0.35)",
+    textColor: "#9ca3af",
+    bgStripe: "rgba(209,213,219,0.08)",
     icon: "ðŸ¾",
     extraCols: [],
     stats: [],
     rules: {
-      format: "EliminaciÃ³n directa 1v1",
+      format: "Eliminación directa 1v1",
       matchFormat: "Bracket directo sin liguilla. Con 5 jugadores hay wildcard; con 6 hay 2 byes.",
       scoring: "Victoria directa en cada duelo.",
-      advancement: "Ganador avanza en el bracket. Final entre los 2 Ãºltimos.",
-      extra: "No hay liguilla; solo bracket directo a partir de la selecciÃ³n inicial.",
+      advancement: "Ganador avanza en el bracket. Final entre los 2 últimos.",
+      extra: "No hay liguilla; solo bracket directo a partir de la selección inicial.",
       sections: [
         {
           title: "Bracket Cobblemon",
@@ -904,13 +904,13 @@ function SectionTitle({ children, sub }: { children: React.ReactNode; sub?: stri
 // â”€â”€â”€ Home Menu â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 const MENU_ITEMS: { id: View; icon: string; label: string; desc: string; color: string; glow: string; border: string; adminOnly?: boolean }[] = [
-  { id: "tablas",    icon: "ðŸ“Š", label: "TABLAS",         desc: "EstadÃ­sticas W/L, MVPs y tÃ­tulos por torneo",      color: "#7c3aed", glow: "rgba(124,58,237,0.3)",  border: "rgba(124,58,237,0.35)" },
-  { id: "jugadores", icon: "ðŸŽ®", label: "JUGADORES",      desc: "Perfiles individuales con stats acumuladas",        color: "#00d4ff", glow: "rgba(0,212,255,0.25)",  border: "rgba(0,212,255,0.3)"  },
-  { id: "historial", icon: "ðŸ—‚ï¸", label: "HISTORIAL",      desc: "Ver torneos jugados y resultados por categorÃ­a",     color: "#f472b6", glow: "rgba(244,114,182,0.25)", border: "rgba(244,114,182,0.35)" },
-  { id: "reglas",    icon: "ðŸ“‹", label: "REGLAS",         desc: "Formatos y reglamento de cada torneo",              color: "#a3e635", glow: "rgba(163,230,53,0.22)", border: "rgba(163,230,53,0.3)" },
+  { id: "tablas",    icon: "📊", label: "TABLAS",         desc: "Estadísticas W/L, MVPs y títulos por torneo",      color: "#7c3aed", glow: "rgba(124,58,237,0.3)",  border: "rgba(124,58,237,0.35)" },
+  { id: "jugadores", icon: "🎮", label: "JUGADORES",      desc: "Perfiles individuales con stats acumuladas",        color: "#00d4ff", glow: "rgba(0,212,255,0.25)",  border: "rgba(0,212,255,0.3)"  },
+  { id: "historial", icon: "📜", label: "HISTORIAL",      desc: "Ver torneos jugados y resultados por categoría",     color: "#f472b6", glow: "rgba(244,114,182,0.25)", border: "rgba(244,114,182,0.35)" },
+  { id: "reglas",    icon: "📋", label: "REGLAS",         desc: "Formatos y reglamento de cada torneo",              color: "#a3e635", glow: "rgba(163,230,53,0.22)", border: "rgba(163,230,53,0.3)" },
   
-  { id: "torneo",    icon: "ðŸ†", label: "NUEVO TORNEO",   desc: "Genera liguilla y cuadro directo; Cobblemon ahora usa bracket directo",          color: "#f59e0b", glow: "rgba(245,158,11,0.25)", border: "rgba(245,158,11,0.3)" },
-  { id: "admin",     icon: "ðŸ”", label: "ADMIN",          desc: "Gestionar jugadores â€” acceso restringido",         color: "#ff4d6d", glow: "rgba(255,77,109,0.25)", border: "rgba(255,77,109,0.3)", adminOnly: true },
+  { id: "torneo",    icon: "🏆", label: "NUEVO TORNEO",   desc: "Genera liguilla y cuadro directo; Cobblemon ahora usa bracket directo",          color: "#f59e0b", glow: "rgba(245,158,11,0.25)", border: "rgba(245,158,11,0.3)" },
+  { id: "admin",     icon: "🔐", label: "ADMIN",          desc: "Gestionar jugadores — acceso restringido",         color: "#ff4d6d", glow: "rgba(255,77,109,0.25)", border: "rgba(255,77,109,0.3)", adminOnly: true },
 ];
 
 function HomeMenu({ onNavigate, playerCount, gameCount }: { onNavigate: (v: View) => void; playerCount: number; gameCount: number }) {
@@ -926,7 +926,7 @@ function HomeMenu({ onNavigate, playerCount, gameCount }: { onNavigate: (v: View
         {/* Header */}
         <div className="text-center mb-12">
           <p className="text-xs tracking-[0.25em] uppercase mb-4" style={{ fontFamily: "JetBrains Mono,monospace", color: "#6b6b88" }}>
-            Torneos de Amigos Â· 2025
+            Torneos de Amigos · 2025
           </p>
           <h1 className="text-6xl sm:text-7xl font-extrabold leading-none tracking-tight mb-4" style={{
             fontFamily: "'Barlow Condensed', sans-serif",
@@ -3297,7 +3297,7 @@ function TorneoView({ players, history, onBack, onSavePlayers, onSaveTournament 
             </div>
             {game?.id === 'cobblemon' && (
               <div className="rounded-2xl p-4 mt-4" style={{ background: "rgba(251,113,133,0.08)", border: "1px solid rgba(251,113,133,0.25)" }}>
-                <p className="text-sm font-semibold" style={{ color: "#fb7185", fontFamily: "'Barlow Condensed', sans-serif" }}>Cobblemon es un torneo de eliminación directa</p>
+                <p className="text-sm font-semibold" style={{ color: "#d1d5db", fontFamily: "'Barlow Condensed', sans-serif" }}>Cobblemon es un torneo de eliminación directa</p>
                 <p className="text-xs mt-2" style={{ color: "#f5c6d1", fontFamily: "JetBrains Mono,monospace" }}>
                   No hay liguilla. Selecciona jugadores y genera el bracket directo: 5 jugadores usan wildcard entre los dos de menor ELO; 6 jugadores usan 2 byes y avanzan directo a semifinales.
                 </p>
@@ -3308,7 +3308,7 @@ function TorneoView({ players, history, onBack, onSavePlayers, onSaveTournament 
 
             {showIdaVueltaToggle && (
               <div className="flex flex-col gap-3 pt-2">
-                <p className="text-[10px] tracking-widest font-semibold" style={{ color: "#6b6b88", fontFamily: "JetBrains Mono,monospace" }}>3 Â· FORMATO DE LIGUILLA</p>
+                <p className="text-[10px] tracking-widest font-semibold" style={{ color: "#6b6b88", fontFamily: "JetBrains Mono,monospace" }}>3 · FORMATO DE LIGUILLA</p>
                 <div className="flex flex-wrap gap-3">
                   <Ripple onClick={() => setUseIdaVuelta(false)} color="rgba(255,255,255,0.08)"
                     className="flex-1 rounded-xl p-3 transition-all"
@@ -3342,7 +3342,7 @@ function TorneoView({ players, history, onBack, onSavePlayers, onSaveTournament 
               fontFamily: "'Barlow Condensed', sans-serif", fontSize: "18px", letterSpacing: "0.08em",
               cursor: gameId && selectedPlayers.length >= 2 ? "pointer" : "not-allowed",
             }}>
-            {format === 'direct' ? 'GENERAR BRACKET â†’' : 'GENERAR LIGUILLA â†’'}
+            {format === 'direct' ? 'GENERAR BRACKET →' : 'GENERAR LIGUILLA →'}
           </Ripple>
           {isRivals && selectedPlayers.length > 0 && (
             <p className="text-[11px] mt-2" style={{ color: "#fbbf24", fontFamily: "JetBrains Mono,monospace" }}>
@@ -3522,7 +3522,7 @@ function TorneoView({ players, history, onBack, onSavePlayers, onSaveTournament 
                   cursor: allPlayed ? "pointer" : "not-allowed",
                 }}
                 disabled={!allPlayed}>
-                CONTINUAR â†’ {(isRivals || isAzure) ? standings.slice(0, 2).map((s) => s.player).join(", ") : standings.slice(0, 4).map((s) => s.player).join(", ")}
+                CONTINUAR → {(isRivals || isAzure) ? standings.slice(0, 2).map((s) => s.player).join(", ") : standings.slice(0, 4).map((s) => s.player).join(", ")}
               </button>
               {!allPlayed && (
                 <p className="text-xs" style={{ color: "#f87171", fontFamily: "JetBrains Mono,monospace" }}>Completa los resultados de todas las jornadas antes de continuar.</p>
