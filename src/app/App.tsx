@@ -1194,8 +1194,8 @@ function HistorialView({ tournaments, history, onBack, onDeleteTournament, onUpd
         <div className="rounded-2xl p-6" style={{ background: "linear-gradient(160deg, #0f0f1a, #09090f)", border: "1px solid rgba(255,255,255,0.08)" }}>
           {!selectedGame ? (
             <div className="text-center py-20">
-              <p className="text-sm font-semibold" style={{ color: "#e8e8f0", fontFamily: "'Barlow Condensed', sans-serif" }>Selecciona primero una categoría de torneo.</p>
-              <p className="text-xs mt-2" style={{ color: "#6b6b88", fontFamily: "JetBrains Mono,monospace" }>Aquí verás todos los torneos jugados con su fecha, campeón, MVP y detalles.</p>
+              <p className="text-sm font-semibold" style={{ color: "#e8e8f0", fontFamily: "'Barlow Condensed', sans-serif" }>Selecciona primero una categoria de torneo.</p>
+              <p className="text-xs mt-2" style={{ color: "#6b6b88", fontFamily: "JetBrains Mono,monospace" }>Aqui veras todos los torneos jugados con su fecha, campeon, MVP y detalles.</p>
             </div>
           ) : (
             <>
