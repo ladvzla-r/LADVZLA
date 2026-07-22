@@ -2380,24 +2380,40 @@ interface BracketState {
   champion: string | null;
 }
 
-function MatchCard({ home, away, onWin, color }: { home: string | null; away: string | null; onWin?: (winner: string) => void; color: string }) {
+function MatchCard({ home, away, onWin, color, winner }: { home: string | null; away: string | null; onWin?: (winner: string) => void; color: string; winner?: string | null }) {
   const pending = !home || !away;
+  const homeIsWinner = winner === home;
+  const awayIsWinner = winner === away;
+  const homeIsLoser = !!winner && winner !== home;
+  const awayIsLoser = !!winner && winner !== away;
+
   return (
     <div className="rounded-xl overflow-hidden flex flex-col" style={{ border: `1px solid ${color}30`, background: "#0f0f1a", minWidth: "160px" }}>
-      {[home, away].map((p, i) => (
-        <div key={i}>
-          {i === 1 && <div style={{ height: "1px", background: "rgba(255,255,255,0.06)" }} />}
-          <Ripple
-            onClick={() => !pending && p && onWin?.(p)}
-            color={`${color}20`}
-            className="px-4 py-3 flex items-center gap-2 text-sm font-semibold transition-colors"
-            style={{ color: p ? "#c8c8d8" : "#3a3a50", fontFamily: "'Barlow', sans-serif", cursor: pending || !onWin ? "default" : "pointer", background: "transparent" }}
-          >
-            <span style={{ color, fontFamily: "JetBrains Mono,monospace", fontSize: "10px", minWidth: "14px" }}>{i === 0 ? "A" : "B"}</span>
-            {p ?? "POR DEFINIR"}
-          </Ripple>
-        </div>
-      ))}
+      {[home, away].map((p, i) => {
+        const isWinner = i === 0 ? homeIsWinner : awayIsWinner;
+        const isLoser = i === 0 ? homeIsLoser : awayIsLoser;
+
+        return (
+          <div key={i}>
+            {i === 1 && <div style={{ height: "1px", background: "rgba(255,255,255,0.06)" }} />}
+            <Ripple
+              onClick={() => !pending && p && onWin?.(p)}
+              color={`${color}20`}
+              className="px-4 py-3 flex items-center gap-2 text-sm font-semibold transition-colors"
+              style={{
+                color: p ? "#c8c8d8" : "#3a3a50",
+                fontFamily: "'Barlow', sans-serif",
+                cursor: pending || !onWin ? "default" : "pointer",
+                background: isWinner ? "rgba(34, 197, 94, 0.18)" : isLoser ? "rgba(239, 68, 68, 0.16)" : "transparent",
+                borderLeft: isWinner ? "3px solid rgba(34, 197, 94, 0.9)" : isLoser ? "3px solid rgba(239, 68, 68, 0.9)" : "3px solid transparent",
+              }}
+            >
+              <span style={{ color, fontFamily: "JetBrains Mono,monospace", fontSize: "10px", minWidth: "14px" }}>{i === 0 ? "A" : "B"}</span>
+              {p ?? "POR DEFINIR"}
+            </Ripple>
+          </div>
+        );
+      })}
     </div>
   );
 }
@@ -2418,22 +2434,19 @@ function BracketView({ bracket, setBracket, standings, color, glow, border, isRi
       const match = prev[matchKey] as [BracketSlot, BracketSlot];
       const loser = match.find((s) => s.player !== winner)?.player ?? null;
 
+      const assignWinnerToSlot = (slot: [BracketSlot, BracketSlot], winnerPlayer: string) => {
+        const emptyIndex = slot.findIndex((s) => !s.player);
+        if (emptyIndex !== -1) {
+          slot[emptyIndex] = { player: winnerPlayer };
+        }
+      };
+
       if (matchKey === "qf1") {
         (next.qf1 as [BracketSlot, BracketSlot]) = [{ player: match[0].player, winner: match[0].player === winner }, { player: match[1].player, winner: match[1].player === winner }];
-        const insertInSemis = (slot: [BracketSlot, BracketSlot]) => {
-          const emptyIndex = slot.findIndex((s) => !s.player);
-          if (emptyIndex !== -1) slot[emptyIndex] = { player: winner };
-        };
-        insertInSemis(next.sf1);
-        if (!next.sf1.some((s) => s.player === winner)) insertInSemis(next.sf2);
+        assignWinnerToSlot(next.sf1, winner);
       } else if (matchKey === "qf2") {
         (next.qf2 as [BracketSlot, BracketSlot]) = [{ player: match[0].player, winner: match[0].player === winner }, { player: match[1].player, winner: match[1].player === winner }];
-        const insertInSemis = (slot: [BracketSlot, BracketSlot]) => {
-          const emptyIndex = slot.findIndex((s) => !s.player);
-          if (emptyIndex !== -1) slot[emptyIndex] = { player: winner };
-        };
-        insertInSemis(next.sf2);
-        if (!next.sf2.some((s) => s.player === winner)) insertInSemis(next.sf1);
+        assignWinnerToSlot(next.sf2, winner);
       } else if (matchKey === "sf1") {
         (next.sf1 as [BracketSlot, BracketSlot]) = [{ player: match[0].player, winner: match[0].player === winner }, { player: match[1].player, winner: match[1].player === winner }];
         next.final = [{ player: winner }, next.final[1]];
@@ -2549,14 +2562,14 @@ function BracketView({ bracket, setBracket, standings, color, glow, border, isRi
               {(bracket.qf1 || bracket.qf2) && (
                 <div className="flex flex-col gap-6">
                   <p className="text-[10px] tracking-widest text-center mb-2" style={{ color: "#6b6b88", fontFamily: "JetBrains Mono,monospace" }}>CUARTOS</p>
-                  {bracket.qf1 && <MatchCard home={bracket.qf1[0].player} away={bracket.qf1[1].player} color={color} onWin={(w) => handleWin("qf1", w)} />}
-                  {bracket.qf2 && <MatchCard home={bracket.qf2[0].player} away={bracket.qf2[1].player} color={color} onWin={(w) => handleWin("qf2", w)} />}
+                  {bracket.qf1 && <MatchCard home={bracket.qf1[0].player} away={bracket.qf1[1].player} color={color} onWin={(w) => handleWin("qf1", w)} winner={bracket.qf1.find((slot) => slot.winner)?.player ?? null} />}
+                  {bracket.qf2 && <MatchCard home={bracket.qf2[0].player} away={bracket.qf2[1].player} color={color} onWin={(w) => handleWin("qf2", w)} winner={bracket.qf2.find((slot) => slot.winner)?.player ?? null} />}
                 </div>
               )}
               <div className="flex flex-col gap-6">
                 <p className="text-[10px] tracking-widest text-center mb-2" style={{ color: "#6b6b88", fontFamily: "JetBrains Mono,monospace" }}>SEMIFINALES</p>
-                <MatchCard home={bracket.sf1[0].player} away={bracket.sf1[1].player} color={color} onWin={(w) => handleWin("sf1", w)} />
-                <MatchCard home={bracket.sf2[0].player} away={bracket.sf2[1].player} color={color} onWin={(w) => handleWin("sf2", w)} />
+                <MatchCard home={bracket.sf1[0].player} away={bracket.sf1[1].player} color={color} onWin={(w) => handleWin("sf1", w)} winner={bracket.sf1.find((slot) => slot.winner)?.player ?? null} />
+                <MatchCard home={bracket.sf2[0].player} away={bracket.sf2[1].player} color={color} onWin={(w) => handleWin("sf2", w)} winner={bracket.sf2.find((slot) => slot.winner)?.player ?? null} />
               </div>
             </>
           )}
@@ -2568,7 +2581,7 @@ function BracketView({ bracket, setBracket, standings, color, glow, border, isRi
           {/* Final */}
           <div className="flex flex-col gap-6 items-center">
             <p className="text-[10px] tracking-widest mb-2" style={{ color: "#6b6b88", fontFamily: "JetBrains Mono,monospace" }}>FINAL</p>
-            <MatchCard home={bracket.final[0].player} away={bracket.final[1].player} color={color} onWin={finalEnabled ? (w) => handleWin("final", w) : undefined} />
+            <MatchCard home={bracket.final[0].player} away={bracket.final[1].player} color={color} onWin={finalEnabled ? (w) => handleWin("final", w) : undefined} winner={bracket.final.find((slot) => slot.winner)?.player ?? null} />
             {(isRivals || isAzure || isVolley || isClashRoyale) && (
               <div className="text-center text-xs text-[#a0a0b8]" style={{ fontFamily: "JetBrains Mono,monospace" }}>{isAzure ? "Ida y vuelta" : isVolley ? "Mejor de 3" : isClashRoyale ? "Marcador directo" : "Mejor de 5"}</div>
             )}
@@ -2631,7 +2644,7 @@ function BracketView({ bracket, setBracket, standings, color, glow, border, isRi
             {/* 3rd place */}
             <div className="mt-8 flex items-center gap-4">
               <p className="text-[10px] tracking-widest flex-shrink-0" style={{ color: "#6b6b88", fontFamily: "JetBrains Mono,monospace" }}>3ER LUGAR</p>
-              <MatchCard home={bracket.third[0].player} away={bracket.third[1].player} color={color} onWin={(w) => handleWin("third", w)} />
+              <MatchCard home={bracket.third[0].player} away={bracket.third[1].player} color={color} onWin={(w) => handleWin("third", w)} winner={bracket.third.find((slot) => slot.winner)?.player ?? null} />
               {(bracket.third[0] as BracketSlot & { winner?: boolean }).winner !== undefined && (
                 <div className="flex items-center gap-2 px-3 py-2 rounded-lg" style={{ background: `${color}10`, border: `1px solid ${border}` }}>
                   <span style={{ color, fontFamily: "JetBrains Mono,monospace", fontSize: "11px" }}>🥉 {bracket.third.find(s => s.winner)?.player}</span>
