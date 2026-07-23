@@ -3452,7 +3452,7 @@ function TorneoView({ players, history, onBack, onSavePlayers, onSaveTournament 
                     );
                   })}
               </div>
-              {(isRivals || isAzure) && selectedPlayers.length > 1 && (
+              {(isRivals || isAzure || isVolley || isBasketball) && selectedPlayers.length > 1 && (
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-3">
                   {rivalsTeams.map((team) => (
                     <div key={team.team} className="rounded-2xl p-3" style={{ background: "rgba(255,255,255,0.03)", border: `1px solid ${game?.border ?? "rgba(255,255,255,0.08)"}` }}>
@@ -3661,9 +3661,9 @@ function TorneoView({ players, history, onBack, onSavePlayers, onSaveTournament 
                                   inputMode="numeric"
                                   pattern="[0-9]*"
                                   min={0}
-                                  max={isAzure ? undefined : isVolley || isBasketball ? 25 : isRivals ? 5 : isClashRoyale ? 3 : 5}
+                                  max={isAzure ? undefined : isVolley ? 25 : isRivals ? 5 : isClashRoyale ? 3 : undefined}
                                   value={score?.home ?? ""}
-                                  onChange={(e) => setTeamScores((prev) => ({ ...prev, [key]: { home: e.target.value === "" ? null : Math.max(0, Math.min(isAzure ? Number.MAX_SAFE_INTEGER : isVolley || isBasketball ? 25 : isRivals ? 5 : isClashRoyale ? 3 : 5, Number(e.target.value))), away: score?.away ?? null } }))}
+                                  onChange={(e) => setTeamScores((prev) => ({ ...prev, [key]: { home: e.target.value === "" ? null : Math.max(0, Math.min(isAzure ? Number.MAX_SAFE_INTEGER : isVolley ? 25 : isRivals ? 5 : isClashRoyale ? 3 : Number.MAX_SAFE_INTEGER, Number(e.target.value))), away: score?.away ?? null } }))}
                                   className="w-12 px-2 py-1 rounded-xl text-[11px] font-semibold text-white bg-[#11101f] border border-white/10 score-input"
                                   style={{ color: "#e8e8f0", WebkitTextFillColor: "#e8e8f0" }}
                                 />
@@ -3675,9 +3675,9 @@ function TorneoView({ players, history, onBack, onSavePlayers, onSaveTournament 
                                   inputMode="numeric"
                                   pattern="[0-9]*"
                                   min={0}
-                                  max={isAzure ? undefined : isVolley || isBasketball ? 25 : isRivals ? 5 : isClashRoyale ? 3 : 5}
+                                  max={isAzure ? undefined : isVolley ? 25 : isRivals ? 5 : isClashRoyale ? 3 : undefined}
                                   value={score?.away ?? ""}
-                                  onChange={(e) => setTeamScores((prev) => ({ ...prev, [key]: { home: score?.home ?? null, away: e.target.value === "" ? null : Math.max(0, Math.min(isAzure ? Number.MAX_SAFE_INTEGER : isVolley || isBasketball ? 25 : isRivals ? 5 : isClashRoyale ? 3 : 5, Number(e.target.value))) } }))}
+                                  onChange={(e) => setTeamScores((prev) => ({ ...prev, [key]: { home: score?.home ?? null, away: e.target.value === "" ? null : Math.max(0, Math.min(isAzure ? Number.MAX_SAFE_INTEGER : isVolley ? 25 : isRivals ? 5 : isClashRoyale ? 3 : Number.MAX_SAFE_INTEGER, Number(e.target.value))) } }))}
                                   className="w-12 px-2 py-1 rounded-xl text-[11px] font-semibold text-white bg-[#11101f] border border-white/10 score-input"
                                   style={{ color: "#e8e8f0", WebkitTextFillColor: "#e8e8f0" }}
                                 />
