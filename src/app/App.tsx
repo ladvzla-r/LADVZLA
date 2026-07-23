@@ -3182,18 +3182,9 @@ function TorneoView({ players, history, onBack, onSavePlayers, onSaveTournament 
       edition: Number.isFinite(edition) && edition > 0 ? edition : 1,
       managedBy: (typeof window !== "undefined" && window.localStorage.getItem(ADMIN_SESSION_KEY)) || managedBy.trim() || "Rikardo",
     };
-    try {
-      const res = await fetch(`${API_BASE}/api/tournaments`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(record),
-      });
-      if (!res.ok) {
-        const errorText = await res.text();
-        throw new Error(`API error ${res.status}: ${errorText}`);
-      }
-      const savedRecord = await res.json();
-      onSaveTournament(savedRecord);
+
+    const finalizeSave = (saved: TournamentRecord) => {
+      onSaveTournament(saved);
       const updated = players.map((player) => {
         const isParticipant = selectedPlayers.includes(player.name);
         const isChampion = championTeam?.players.includes(player.name) || player.name === champion;
@@ -3208,9 +3199,24 @@ function TorneoView({ players, history, onBack, onSavePlayers, onSaveTournament 
       });
       onSavePlayers(updated);
       setSavedTournament(true);
+      setSaveError(false);
+    };
+
+    try {
+      const res = await fetch(`${API_BASE}/api/tournaments`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(record),
+      });
+      if (!res.ok) {
+        const errorText = await res.text();
+        throw new Error(`API error ${res.status}: ${errorText}`);
+      }
+      const savedRecord = await res.json();
+      finalizeSave({ ...record, ...savedRecord, id: savedRecord.id ?? record.id });
     } catch (err) {
-      console.error(err);
-      setSaveError(true);
+      console.warn('API tournament save failed, saving locally instead.', err);
+      finalizeSave(record);
     }
   };
 
