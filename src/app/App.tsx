@@ -19,6 +19,7 @@ interface PlayerStat {
   kills?: number;
   points?: number;
   assists?: number;
+  dribbles?: number;
   blocks?: number;
   cups?: number;
 }
@@ -69,13 +70,14 @@ interface TournamentPlayerStats {
   goals?: number;
   points?: number;
   assists?: number;
+  dribbles?: number;
   blocks?: number;
   cups?: number;
 }
 
 type TournamentRecord = {
   id?: string;
-  gameId: string;
+  gameId: string | null;
   date: string;
   participants: string[];
   champion: string;
@@ -341,6 +343,56 @@ const TOURNAMENTS: TournamentDef[] = [
     },
   },
   {
+    id: "basketball",
+    name: "Basketball",
+    tag: "DUOS",
+    color: "#8b5cf6",
+    glow: "rgba(139,92,246,0.22)",
+    border: "rgba(139,92,246,0.35)",
+    textColor: "#c4b5fd",
+    bgStripe: "rgba(139,92,246,0.06)",
+    icon: "🏀",
+    extraCols: [
+      { label: "Pts", key: "points" },
+      { label: "Asistencias", key: "assists" },
+      { label: "Dribles", key: "dribbles" },
+      { label: "Bloqueos", key: "blocks" },
+    ],
+    stats: [
+      { player: "Vortex",    w: 15, l: 6,  streak: 4,  mvp: 4, tournamentsWon: 2, points: 38, assists: 14, dribbles: 22, blocks: 8 },
+      { player: "CrashWave", w: 13, l: 8,  streak: 2,  mvp: 3, tournamentsWon: 1, points: 34, assists: 12, dribbles: 19, blocks: 7 },
+      { player: "Lumix",     w: 12, l: 9,  streak: 1,  mvp: 3, tournamentsWon: 1, points: 29, assists: 11, dribbles: 17, blocks: 6 },
+      { player: "Drakken",   w: 11, l: 10, streak: -1, mvp: 2, tournamentsWon: 0, points: 27, assists: 10, dribbles: 14, blocks: 5 },
+      { player: "Zektro",    w: 9,  l: 12, streak: 0,  mvp: 2, tournamentsWon: 0, points: 22, assists: 9,  dribbles: 13, blocks: 4 },
+      { player: "NovaSky",   w: 8,  l: 14, streak: -2, mvp: 1, tournamentsWon: 0, points: 18, assists: 8,  dribbles: 12, blocks: 4 },
+      { player: "Pixelate",  w: 6,  l: 16, streak: -5, mvp: 0, tournamentsWon: 0, points: 13, assists: 5,  dribbles: 9,  blocks: 3 },
+    ],
+    rules: {
+      format: "Liguilla + Final",
+      matchFormat: "Liguilla de duos en formato 2v2. Final al mejor de 3 partidos.",
+      scoring: "Victoria por puntos. Se requiere al menos 15 para cerrar el juego.",
+      advancement: "Clasifican los 2 mejores duos. La final decide el campeón en serie al mejor de 3.",
+      extra: "La ventana de stats por jugador acompaña el torneo para registrar puntos, asistencias, dribles y bloqueos.",
+      sections: [
+        {
+          title: "Fase de liga",
+          lines: [
+            "Cada duelo es entre duos.",
+            "La ruleta define los enfrentamientos.",
+            "La clasificación va por diferencia de puntos y porcentaje de victorias.",
+          ],
+        },
+        {
+          title: "Fase final",
+          lines: [
+            "Final al mejor de 3 partidos.",
+            "Se determina al equipo que gana 2 sets.",
+          ],
+        },
+      ],
+    },
+  },
+  {
     id: "clashroyale",
     name: "Clash Royale",
     tag: "MOBILE",
@@ -546,7 +598,20 @@ function isValidVolleyScore(score: { home: number | null; away: number | null })
 
 function getVolleyMatchWinner(score: { home: number | null; away: number | null }, home: string, away: string) {
   if (!isValidVolleyScore(score)) return null;
-  return score.home && score.home > score.away ? home : away;
+  return score.home !== null && score.home > score.away ? home : away;
+}
+
+function isValidBasketballScore(score: { home: number | null; away: number | null }) {
+  const { home, away } = score;
+  if (home === null || away === null) return false;
+  const homeWins = home >= 15 && home > away;
+  const awayWins = away >= 15 && away > home;
+  return homeWins || awayWins;
+}
+
+function getBasketballMatchWinner(score: { home: number | null; away: number | null }, home: string, away: string) {
+  if (!isValidBasketballScore(score)) return null;
+  return score.home !== null && score.home > score.away ? home : away;
 }
 
 function isValidClashRoyaleScore(score: { home: number | null; away: number | null }) {
@@ -684,6 +749,34 @@ function computeVolleyStandings(
       const score = scores[key];
       if (!score) continue;
       const winner = getVolleyMatchWinner(score, home, away);
+      if (!winner) continue;
+      const loser = winner === home ? away : home;
+      s[winner].w += 1;
+      s[loser].l += 1;
+      s[home].pf += score.home;
+      s[home].pa += score.away;
+      s[away].pf += score.away;
+      s[away].pa += score.home;
+    }
+  }
+  return Object.entries(s)
+    .map(([player, data]) => ({ player, ...data, played: data.w + data.l, diff: data.pf - data.pa }))
+    .sort((a, b) => b.w - a.w || b.diff - a.diff || b.pf - a.pf || a.player.localeCompare(b.player));
+}
+
+function computeBasketballStandings(
+  players: string[],
+  rounds: { round: number; matches: [string, string][] }[],
+  scores: Record<string, { home: number; away: number }>
+) {
+  const s: Record<string, { w: number; l: number; pf: number; pa: number; diff: number }> = {};
+  for (const p of players) s[p] = { w: 0, l: 0, pf: 0, pa: 0, diff: 0 };
+  for (const round of rounds) {
+    for (const [home, away] of round.matches) {
+      const key = `${round.round}|${home}|${away}`;
+      const score = scores[key];
+      if (!score) continue;
+      const winner = getBasketballMatchWinner(score, home, away);
       if (!winner) continue;
       const loser = winner === home ? away : home;
       s[winner].w += 1;
@@ -2433,7 +2526,7 @@ function MatchCard({ home, away, onWin, color, winner }: { home: string | null; 
   );
 }
 
-function BracketView({ bracket, setBracket, standings, color, glow, border, isRivals, isAzure, isVolley, isClashRoyale }: {
+function BracketView({ bracket, setBracket, standings, color, glow, border, isRivals, isAzure, isVolley, isBasketball, isClashRoyale }: {
   bracket: BracketState;
   setBracket: React.Dispatch<React.SetStateAction<BracketState>>;
   standings: { player: string; pts?: number; w: number; l: number; played: number; crownDiff?: number; crownsFor?: number; crownsAgainst?: number }[];
@@ -2441,6 +2534,7 @@ function BracketView({ bracket, setBracket, standings, color, glow, border, isRi
   isRivals: boolean;
   isAzure: boolean;
   isVolley: boolean;
+  isBasketball: boolean;
   isClashRoyale: boolean;
 }) {
   const handleWin = (matchKey: keyof BracketState, winner: string) => {
@@ -2492,7 +2586,7 @@ function BracketView({ bracket, setBracket, standings, color, glow, border, isRi
         next.finalSeries.filter((game) => {
           if (game.home === null || game.away === null) return false;
           if (isRivals) return isValidRivalsScore(game) && (isHome ? game.home > game.away : game.away > game.home);
-          if (isVolley) return isValidVolleyScore(game) && (isHome ? game.home > game.away : game.away > game.home);
+          if (isVolley || isBasketball) return isValidVolleyScore(game) && (isHome ? game.home > game.away : game.away > game.home);
           if (isClashRoyale) return isValidClashRoyaleScore(game) && (isHome ? game.home > game.away : game.away > game.home);
           return false;
         }).length;
@@ -2500,7 +2594,7 @@ function BracketView({ bracket, setBracket, standings, color, glow, border, isRi
       const awayWins = countValidWins(false);
       if (isRivals) {
         next.champion = homeWins >= 3 ? homePlayer : awayWins >= 3 ? awayPlayer : null;
-      } else if (isVolley) {
+      } else if (isVolley || isBasketball) {
         next.champion = homeWins >= 2 ? homePlayer : awayWins >= 2 ? awayPlayer : null;
       } else if (isClashRoyale) {
         next.champion = homeWins > awayWins ? homePlayer : awayWins > homeWins ? awayPlayer : null;
@@ -2513,26 +2607,10 @@ function BracketView({ bracket, setBracket, standings, color, glow, border, isRi
     });
   };
 
-  const setFinalGameWinner = (index: number, player: string) => {
-    setBracket((prev) => {
-      if (!prev.final[0].player || !prev.final[1].player) return prev;
-      const next = { ...prev, finalSeries: [...prev.finalSeries] };
-      next.finalSeries[index] = prev.finalSeries[index] === player ? null : player;
-      const homePlayer = prev.final[0].player;
-      const awayPlayer = prev.final[1].player;
-      const homeWins = next.finalSeries.filter((w) => w === homePlayer).length;
-      const awayWins = next.finalSeries.filter((w) => w === awayPlayer).length;
-      if (homeWins >= 3) next.champion = homePlayer;
-      else if (awayWins >= 3) next.champion = awayPlayer;
-      else next.champion = null;
-      return next;
-    });
-  };
-
   const hasSF1Winner = bracket.final[0].player !== null;
   const hasSF2Winner = bracket.final[1].player !== null;
-  const finalEnabled = isRivals || isAzure || isVolley || isClashRoyale || (!!bracket.final[0].player && !!bracket.final[1].player);
-  const seeds = isRivals || isAzure || isVolley ? standings.slice(0, 2) : standings.slice(0, 4);
+  const finalEnabled = isRivals || isAzure || isVolley || isBasketball || isClashRoyale || (!!bracket.final[0].player && !!bracket.final[1].player);
+  const seeds = isRivals || isAzure || isVolley || isBasketball ? standings.slice(0, 2) : standings.slice(0, 4);
   const homePlayer = bracket.final[0].player;
   const awayPlayer = bracket.final[1].player;
   const clashFinalScore = isClashRoyale ? bracket.finalSeries[0] : undefined;
@@ -2543,7 +2621,7 @@ function BracketView({ bracket, setBracket, standings, color, glow, border, isRi
     : bracket.finalSeries.filter((game) => {
       if (game.home === null || game.away === null) return false;
       if (isRivals) return isValidRivalsScore(game) && game.home > game.away;
-      if (isVolley) return isValidVolleyScore(game) && game.home > game.away;
+      if (isVolley || isBasketball) return isValidVolleyScore(game) && game.home > game.away;
       if (isClashRoyale) return isValidClashRoyaleScore(game) && game.home > game.away;
       return game.home > game.away;
     }).length;
@@ -2552,7 +2630,7 @@ function BracketView({ bracket, setBracket, standings, color, glow, border, isRi
     : bracket.finalSeries.filter((game) => {
       if (game.home === null || game.away === null) return false;
       if (isRivals) return isValidRivalsScore(game) && game.away > game.home;
-      if (isVolley) return isValidVolleyScore(game) && game.away > game.home;
+      if (isVolley || isBasketball) return isValidVolleyScore(game) && game.away > game.home;
       if (isClashRoyale) return isValidClashRoyaleScore(game) && game.away > game.home;
       return game.away > game.home;
     }).length;
@@ -2566,7 +2644,7 @@ function BracketView({ bracket, setBracket, standings, color, glow, border, isRi
           <div key={s.player} className="flex items-center gap-2 px-3 py-1.5 rounded-lg" style={{ background: `${color}15`, border: `1px solid ${border}` }}>
             <span className="text-xs font-bold" style={{ color, fontFamily: "JetBrains Mono,monospace" }}>{i + 1}Â°</span>
             <span className="text-sm font-semibold" style={{ color: "#e8e8f0" }}>{s.player}</span>
-            <span className="text-xs" style={{ color: "#6b6b88", fontFamily: "JetBrains Mono,monospace" }}>{isClashRoyale ? `${(s as any).crownDiff ?? 0} dif` : isRivals ? `${(s as any).rndDiff ?? 0} dif` : isVolley ? `${(s as any).pf ?? 0}pf` : `${s.pts ?? 0}pts`}</span>
+            <span className="text-xs" style={{ color: "#6b6b88", fontFamily: "JetBrains Mono,monospace" }}>{isClashRoyale ? `${(s as any).crownDiff ?? 0} dif` : isRivals ? `${(s as any).rndDiff ?? 0} dif` : isVolley || isBasketball ? `${(s as any).pf ?? 0}pf` : `${s.pts ?? 0}pts`}</span>
           </div>
         ))}
       </div>
@@ -2599,14 +2677,14 @@ function BracketView({ bracket, setBracket, standings, color, glow, border, isRi
           <div className="flex flex-col gap-6 items-center">
             <p className="text-[10px] tracking-widest mb-2" style={{ color: "#6b6b88", fontFamily: "JetBrains Mono,monospace" }}>FINAL</p>
             <MatchCard home={bracket.final[0].player} away={bracket.final[1].player} color={color} onWin={finalEnabled ? (w) => handleWin("final", w) : undefined} winner={bracket.final.find((slot) => slot.winner)?.player ?? null} />
-            {(isRivals || isAzure || isVolley || isClashRoyale) && (
-              <div className="text-center text-xs text-[#a0a0b8]" style={{ fontFamily: "JetBrains Mono,monospace" }}>{isAzure ? "Ida y vuelta" : isVolley ? "Mejor de 3" : isClashRoyale ? "Marcador directo" : "Mejor de 5"}</div>
+            {(isRivals || isAzure || isVolley || isBasketball || isClashRoyale) && (
+              <div className="text-center text-xs text-[#a0a0b8]" style={{ fontFamily: "JetBrains Mono,monospace" }}>{isAzure ? "Ida y vuelta" : isVolley || isBasketball ? "Mejor de 3" : isClashRoyale ? "Marcador directo" : "Mejor de 5"}</div>
             )}
-            {(isRivals || isAzure || isVolley || isClashRoyale) && (
+            {(isRivals || isAzure || isVolley || isBasketball || isClashRoyale) && (
               <div className="w-full max-w-sm rounded-2xl p-3" style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)" }}>
                 <div className="flex items-center justify-between mb-3 text-[11px] font-semibold" style={{ color: "#c8c8d8", fontFamily: "JetBrains Mono,monospace" }}>
                   <span>{homePlayer ? `${homePlayer} (${isClashRoyale ? clashHomeScore : homeWins})` : "Equipo A"}</span>
-                  <span>{isAzure ? "Ida/Vuelta + extra" : isVolley ? "Mejor de 3" : isClashRoyale ? "Marcador directo" : "Mejor de 5"}</span>
+                  <span>{isAzure ? "Ida/Vuelta + extra" : isVolley || isBasketball ? "Mejor de 3" : isClashRoyale ? "Marcador directo" : "Mejor de 5"}</span>
                   <span>{awayPlayer ? `${awayPlayer} (${isClashRoyale ? clashAwayScore : awayWins})` : "Equipo B"}</span>
                 </div>
                 <div className="space-y-2">
@@ -2690,7 +2768,9 @@ function TorneoView({ players, history, onBack, onSavePlayers, onSaveTournament 
   const [volleyPtsByPlayer, setVolleyPtsByPlayer] = useState<Record<string, number>>(() => Object.fromEntries(players.map((p) => [p.name, 0])));
   const [volleyAssistsByPlayer, setVolleyAssistsByPlayer] = useState<Record<string, number>>(() => Object.fromEntries(players.map((p) => [p.name, 0])));
   const [volleyBlocksByPlayer, setVolleyBlocksByPlayer] = useState<Record<string, number>>(() => Object.fromEntries(players.map((p) => [p.name, 0])));
+  const [basketballDribblesByPlayer, setBasketballDribblesByPlayer] = useState<Record<string, number>>(() => Object.fromEntries(players.map((p) => [p.name, 0])));
   const [showVolleyPanel, setShowVolleyPanel] = useState(true);
+  const [showBasketballPanel, setShowBasketballPanel] = useState(true);
   const [mvpPlayer, setMvpPlayer] = useState<string | null>(null);
   const [bestServer, setBestServer] = useState<string | null>(null);
   const [edition, setEdition] = useState(1);
@@ -2708,9 +2788,10 @@ function TorneoView({ players, history, onBack, onSavePlayers, onSaveTournament 
   const isRivals = game?.id === "rivals";
   const isAzure = game?.id === "azure";
   const isVolley = game?.id === "volley";
+  const isBasketball = game?.id === "basketball";
   const isClashRoyale = game?.id === "clashroyale";
   const isCobblemon = game?.id === "cobblemon";
-  const isTeamSport = isRivals || isAzure || isVolley;
+  const isTeamSport = isRivals || isAzure || isVolley || isBasketball;
   const showIdaVueltaToggle = isTeamSport;
 
   const getPlayerElo = (playerName: string) => {
@@ -2819,8 +2900,8 @@ function TorneoView({ players, history, onBack, onSavePlayers, onSaveTournament 
     ? computeRivalsStandings(teamNames, rounds, teamScores)
     : isAzure
       ? computeAzureStandings(teamNames, rounds, teamScores)
-      : isVolley
-        ? computeVolleyStandings(teamNames, rounds, teamScores)
+      : isVolley || isBasketball
+        ? computeBasketballStandings(teamNames, rounds, teamScores)
         : isClashRoyale
           ? computeClashRoyaleStandings(selectedPlayers, rounds, teamScores)
           : computeStandings(selectedPlayers, rounds, results);
@@ -2829,7 +2910,7 @@ function TorneoView({ players, history, onBack, onSavePlayers, onSaveTournament 
       const key = `${round.round}|${home}|${away}`;
       if (isRivals) return Boolean(teamScores[key] && isValidRivalsScore(teamScores[key]));
       if (isAzure) return Boolean(teamScores[key] && typeof teamScores[key]?.home === "number" && typeof teamScores[key]?.away === "number" && teamScores[key].home >= 0 && teamScores[key].away >= 0);
-      if (isVolley) return Boolean(teamScores[key] && isValidVolleyScore(teamScores[key]));
+      if (isVolley || isBasketball) return Boolean(teamScores[key] && (isVolley ? isValidVolleyScore(teamScores[key]) : isValidBasketballScore(teamScores[key])));
       if (isClashRoyale) return Boolean(teamScores[key] && isValidClashRoyaleScore(teamScores[key]));
       return Boolean(results[key]);
     })
@@ -2952,6 +3033,69 @@ function TorneoView({ players, history, onBack, onSavePlayers, onSaveTournament 
     mapSetter((prev) => ({ ...prev, [player]: Math.max(0, (prev[player] ?? 0) + delta) }));
   };
 
+  const renderBasketballPanel = () => (
+    <div className="fixed right-4 top-28 block" style={{ zIndex: 50 }}>
+      {showBasketballPanel ? (
+        <div className="w-[26rem] rounded-[32px] p-5" style={{ background: "rgba(15,15,26,0.95)", border: "1px solid rgba(139,92,246,0.28)", boxShadow: "0 30px 100px rgba(139,92,246,0.16)", maxHeight: "calc(100vh - 120px)" }}>
+          <div className="flex items-center justify-between gap-3 mb-4">
+            <p className="text-xs font-semibold tracking-[0.24em] uppercase" style={{ color: "#c4b5fd", fontFamily: "JetBrains Mono,monospace" }}>Basketball — Pts · Asistencias · Dribles · Bloqueos</p>
+            <button onClick={() => setShowBasketballPanel(false)} className="text-[11px] font-semibold uppercase rounded-full px-3 py-1" style={{ background: "rgba(255,255,255,0.06)", color: "#a0a0b8", fontFamily: "JetBrains Mono,monospace" }}>Ocultar</button>
+          </div>
+          <div className="grid gap-3 mb-4">
+            <div>
+              <label className="block text-[10px] uppercase tracking-[0.22em] mb-2" style={{ color: "#6b6b88", fontFamily: "JetBrains Mono,monospace" }}>Seleccionar MVP</label>
+              <select
+                value={mvpPlayer ?? ""}
+                onChange={(e) => setMvpPlayer(e.target.value || null)}
+                className="w-full rounded-2xl border border-white/10 bg-[#11101f] px-3 py-2 text-sm text-white"
+                style={{ fontFamily: "JetBrains Mono,monospace" }}>
+                <option value="">-- Ninguno --</option>
+                {selectedPlayers.map((player) => (
+                  <option key={player} value={player}>{player}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+          <div className="space-y-3" style={{ maxHeight: "calc(100vh - 260px)", overflowY: "auto" }}>
+            {selectedPlayers.map((player) => (
+              <div key={player} className="rounded-2xl px-3 py-3" style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)" }}>
+                <div className="flex items-center justify-between gap-3">
+                  <span className="text-sm" style={{ color: "#e8e8f0", fontFamily: "'Barlow', sans-serif" }}>{player}</span>
+                  <div className="flex items-center gap-2 flex-wrap justify-end">
+                    <div className="flex items-center gap-1">
+                      <button onClick={() => updateVolleyStat(setVolleyPtsByPlayer, player, -1)} className="w-7 h-7 rounded-full" style={{ background: "rgba(255,255,255,0.06)", color: "#c4b5fd", fontFamily: "JetBrains Mono,monospace" }}>-</button>
+                      <span className="text-sm font-bold" style={{ color: "#c4b5fd", fontFamily: "JetBrains Mono,monospace" }}>{volleyPtsByPlayer[player] ?? 0}</span>
+                      <button onClick={() => updateVolleyStat(setVolleyPtsByPlayer, player, 1)} className="w-7 h-7 rounded-full" style={{ background: "rgba(255,255,255,0.06)", color: "#c4b5fd", fontFamily: "JetBrains Mono,monospace" }}>+</button>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <button onClick={() => updateVolleyStat(setVolleyAssistsByPlayer, player, -1)} className="w-7 h-7 rounded-full" style={{ background: "rgba(255,255,255,0.06)", color: "#a0a0b8", fontFamily: "JetBrains Mono,monospace" }}>-</button>
+                      <span className="text-sm font-bold" style={{ color: "#a0a0b8", fontFamily: "JetBrains Mono,monospace" }}>{volleyAssistsByPlayer[player] ?? 0}</span>
+                      <button onClick={() => updateVolleyStat(setVolleyAssistsByPlayer, player, 1)} className="w-7 h-7 rounded-full" style={{ background: "rgba(255,255,255,0.06)", color: "#a0a0b8", fontFamily: "JetBrains Mono,monospace" }}>+</button>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <button onClick={() => updateVolleyStat(setBasketballDribblesByPlayer, player, -1)} className="w-7 h-7 rounded-full" style={{ background: "rgba(255,255,255,0.06)", color: "#93c5fd", fontFamily: "JetBrains Mono,monospace" }}>-</button>
+                      <span className="text-sm font-bold" style={{ color: "#93c5fd", fontFamily: "JetBrains Mono,monospace" }}>{basketballDribblesByPlayer[player] ?? 0}</span>
+                      <button onClick={() => updateVolleyStat(setBasketballDribblesByPlayer, player, 1)} className="w-7 h-7 rounded-full" style={{ background: "rgba(255,255,255,0.06)", color: "#93c5fd", fontFamily: "JetBrains Mono,monospace" }}>+</button>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <button onClick={() => updateVolleyStat(setVolleyBlocksByPlayer, player, -1)} className="w-7 h-7 rounded-full" style={{ background: "rgba(255,255,255,0.06)", color: "#f1f5f9", fontFamily: "JetBrains Mono,monospace" }}>-</button>
+                      <span className="text-sm font-bold" style={{ color: "#f1f5f9", fontFamily: "JetBrains Mono,monospace" }}>{volleyBlocksByPlayer[player] ?? 0}</span>
+                      <button onClick={() => updateVolleyStat(setVolleyBlocksByPlayer, player, 1)} className="w-7 h-7 rounded-full" style={{ background: "rgba(255,255,255,0.06)", color: "#f1f5f9", fontFamily: "JetBrains Mono,monospace" }}>+</button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      ) : (
+        <button onClick={() => setShowBasketballPanel(true)} className="w-40 rounded-full py-3 text-sm font-semibold" style={{ background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.12)", color: "#c4b5fd", fontFamily: "JetBrains Mono,monospace" }}>
+          Mostrar stats
+        </button>
+      )}
+    </div>
+  );
+
   const renderVolleyPanel = () => (
     <div className="fixed right-4 top-28 block" style={{ zIndex: 50 }}>
       {showVolleyPanel ? (
@@ -3024,10 +3168,10 @@ function TorneoView({ players, history, onBack, onSavePlayers, onSaveTournament 
   );
 
   const advanceToBracket = () => {
-    if (isRivals || isVolley) {
+    if (isRivals || isVolley || isBasketball) {
       const top2 = standings.slice(0, 2).map((s) => s.player);
       const [s1, s2] = top2;
-      setBracket({ sf1: [{ player: null }, { player: null }], sf2: [{ player: null }, { player: null }], final: [{ player: s1 }, { player: s2 }], third: [{ player: null }, { player: null }], finalSeries: Array.from({ length: isVolley ? 3 : 5 }, () => ({ home: null, away: null })), champion: null });
+      setBracket({ sf1: [{ player: null }, { player: null }], sf2: [{ player: null }, { player: null }], final: [{ player: s1 }, { player: s2 }], third: [{ player: null }, { player: null }], finalSeries: Array.from({ length: isVolley ? 3 : isBasketball ? 3 : 5 }, () => ({ home: null, away: null })), champion: null });
     } else if (isAzure) {
       const top2 = standings.slice(0, 2).map((s) => s.player);
       const [s1, s2] = top2;
@@ -3065,6 +3209,10 @@ function TorneoView({ players, history, onBack, onSavePlayers, onSaveTournament 
   const saveTournament = async () => {
     if (!game || (isTeamSport ? !teamNames.length : selectedPlayers.length < 2)) return;
     let champion = bracket.champion;
+    const finalWinner = bracket.final.find((slot) => slot.winner === true)?.player ?? null;
+    if (!champion && finalWinner) {
+      champion = finalWinner;
+    }
     if (!champion && format === "liguilla") {
       champion = standings[0]?.player ?? null;
     }
@@ -3089,19 +3237,20 @@ function TorneoView({ players, history, onBack, onSavePlayers, onSaveTournament 
           mvps: mvpPlayer === player ? 1 : 0,
           participations: 1,
           goals: isAzure ? (azureGoalsByPlayer[player] ?? 0) : undefined,
-          points: isVolley ? (volleyPtsByPlayer[player] ?? 0) : undefined,
-          assists: isVolley ? (volleyAssistsByPlayer[player] ?? 0) : undefined,
-          blocks: isVolley ? (volleyBlocksByPlayer[player] ?? 0) : undefined,
+          points: isVolley || isBasketball ? (volleyPtsByPlayer[player] ?? 0) : undefined,
+          assists: isVolley || isBasketball ? (volleyAssistsByPlayer[player] ?? 0) : undefined,
+          dribbles: isBasketball ? (basketballDribblesByPlayer[player] ?? 0) : undefined,
+          blocks: isVolley || isBasketball ? (volleyBlocksByPlayer[player] ?? 0) : undefined,
         }])
       );
 
       const addResult = (winner: string, loser: string) => {
-        const winnerPlayers = (isRivals || isVolley)
+        const winnerPlayers = (isRivals || isVolley || isBasketball)
           ? buildRivalsTeams(selectedPlayers).find((team) => team.team === winner)?.players ?? []
           : isAzure
             ? buildRivalsTeams(selectedPlayers).find((team) => team.team === winner)?.players ?? []
             : [winner];
-        const loserPlayers = (isRivals || isVolley)
+        const loserPlayers = (isRivals || isVolley || isBasketball)
           ? buildRivalsTeams(selectedPlayers).find((team) => team.team === loser)?.players ?? []
           : isAzure
             ? buildRivalsTeams(selectedPlayers).find((team) => team.team === loser)?.players ?? []
@@ -3430,7 +3579,7 @@ function TorneoView({ players, history, onBack, onSavePlayers, onSaveTournament 
                       <td className="py-2.5 px-2 text-center text-xs" style={{ fontFamily: "JetBrains Mono,monospace", color: "#6b6b88" }}>{s.played}</td>
                       <td className="py-2.5 px-2 text-center text-xs font-semibold" style={{ fontFamily: "JetBrains Mono,monospace", color: "#a3e635" }}>{s.w}</td>
                       <td className="py-2.5 px-2 text-center text-xs font-semibold" style={{ fontFamily: "JetBrains Mono,monospace", color: "#f87171" }}>{s.l}</td>
-                      {isRivals || isVolley ? (
+                      {isRivals || isVolley || isBasketball ? (
                         <>
                           {isRivals ? (
                             <>
@@ -3488,9 +3637,11 @@ function TorneoView({ players, history, onBack, onSavePlayers, onSaveTournament 
                           ? score && getRivalsMatchWinner(score, home, away)
                           : isAzure
                             ? score && (score.home > score.away ? home : score.away > score.home ? away : null)
-                            : isClashRoyale
-                              ? score && (score.home > score.away ? home : score.away > score.home ? away : null)
-                              : results[key];
+                            : isVolley || isBasketball
+                              ? score && getBasketballMatchWinner(score, home, away)
+                              : isClashRoyale
+                                ? score && (score.home > score.away ? home : score.away > score.home ? away : null)
+                                : results[key];
                         return (
                           <div key={key} className="grid grid-cols-1 lg:grid-cols-[1fr_auto_1fr_auto] gap-2 items-center px-2 py-1.5" style={{ borderBottom: "1px solid rgba(255,255,255,0.04)" }}>
                             <div className="rounded-lg p-2" style={{ background: winner === home ? `${game.color}15` : "rgba(255,255,255,0.04)", border: winner === home ? `1px solid ${game.border}` : "1px solid rgba(255,255,255,0.07)" }}>
@@ -3498,7 +3649,7 @@ function TorneoView({ players, history, onBack, onSavePlayers, onSaveTournament 
                             </div>
                             <div className="text-center">
                               <p className="text-[9px] uppercase tracking-[0.18em]" style={{ color: "#6b6b88", fontFamily: "JetBrains Mono,monospace" }}>VS</p>
-                              <p className="text-[9px]" style={{ color: "#6b6b88", fontFamily: "JetBrains Mono,monospace" }}>{isAzure ? "Goles" : isClashRoyale ? "Coronas" : "5 rondas"}</p>
+                              <p className="text-[9px]" style={{ color: "#6b6b88", fontFamily: "JetBrains Mono,monospace" }}>{isAzure ? "Goles" : isBasketball ? "Puntos" : isClashRoyale ? "Coronas" : "5 rondas"}</p>
                             </div>
                             <div className="rounded-lg p-2" style={{ background: winner === away ? `${game.color}15` : "rgba(255,255,255,0.04)", border: winner === away ? `1px solid ${game.border}` : "1px solid rgba(255,255,255,0.07)" }}>
                               <p className="text-[10px] font-semibold" style={{ color: winner === away ? game.textColor : "#a0a0b8" }}>{away}</p>
@@ -3510,9 +3661,9 @@ function TorneoView({ players, history, onBack, onSavePlayers, onSaveTournament 
                                   inputMode="numeric"
                                   pattern="[0-9]*"
                                   min={0}
-                                  max={isAzure ? undefined : isVolley ? 25 : isRivals ? 5 : isClashRoyale ? 3 : 5}
+                                  max={isAzure ? undefined : isVolley || isBasketball ? 25 : isRivals ? 5 : isClashRoyale ? 3 : 5}
                                   value={score?.home ?? ""}
-                                  onChange={(e) => setTeamScores((prev) => ({ ...prev, [key]: { home: e.target.value === "" ? null : Math.max(0, Math.min(isAzure ? Number.MAX_SAFE_INTEGER : isVolley ? 25 : isRivals ? 5 : isClashRoyale ? 3 : 5, Number(e.target.value))), away: score?.away ?? null } }))}
+                                  onChange={(e) => setTeamScores((prev) => ({ ...prev, [key]: { home: e.target.value === "" ? null : Math.max(0, Math.min(isAzure ? Number.MAX_SAFE_INTEGER : isVolley || isBasketball ? 25 : isRivals ? 5 : isClashRoyale ? 3 : 5, Number(e.target.value))), away: score?.away ?? null } }))}
                                   className="w-12 px-2 py-1 rounded-xl text-[11px] font-semibold text-white bg-[#11101f] border border-white/10 score-input"
                                   style={{ color: "#e8e8f0", WebkitTextFillColor: "#e8e8f0" }}
                                 />
@@ -3524,9 +3675,9 @@ function TorneoView({ players, history, onBack, onSavePlayers, onSaveTournament 
                                   inputMode="numeric"
                                   pattern="[0-9]*"
                                   min={0}
-                                  max={isAzure ? undefined : isVolley ? 25 : isRivals ? 5 : isClashRoyale ? 3 : 5}
+                                  max={isAzure ? undefined : isVolley || isBasketball ? 25 : isRivals ? 5 : isClashRoyale ? 3 : 5}
                                   value={score?.away ?? ""}
-                                  onChange={(e) => setTeamScores((prev) => ({ ...prev, [key]: { home: score?.home ?? null, away: e.target.value === "" ? null : Math.max(0, Math.min(isAzure ? Number.MAX_SAFE_INTEGER : isVolley ? 25 : isRivals ? 5 : isClashRoyale ? 3 : 5, Number(e.target.value))) } }))}
+                                  onChange={(e) => setTeamScores((prev) => ({ ...prev, [key]: { home: score?.home ?? null, away: e.target.value === "" ? null : Math.max(0, Math.min(isAzure ? Number.MAX_SAFE_INTEGER : isVolley || isBasketball ? 25 : isRivals ? 5 : isClashRoyale ? 3 : 5, Number(e.target.value))) } }))}
                                   className="w-12 px-2 py-1 rounded-xl text-[11px] font-semibold text-white bg-[#11101f] border border-white/10 score-input"
                                   style={{ color: "#e8e8f0", WebkitTextFillColor: "#e8e8f0" }}
                                 />
@@ -3544,8 +3695,9 @@ function TorneoView({ players, history, onBack, onSavePlayers, onSaveTournament 
           {isRivals && renderKillsPanel()}
           {isAzure && renderAzurePanel()}
           {game?.id === "volley" && renderVolleyPanel()}
+          {game?.id === "basketball" && renderBasketballPanel()}
 
-          {format === "liguilla+elim" && standings.length >= (isRivals || isAzure || isVolley ? 2 : 4) && rounds.length > 0 && (
+          {format === "liguilla+elim" && standings.length >= (isRivals || isAzure || isVolley || isBasketball ? 2 : 4) && rounds.length > 0 && (
             <div className="flex flex-col gap-4">
               <button onClick={allPlayed ? advanceToBracket : undefined}
                 className="py-4 rounded-2xl text-center font-bold"
@@ -3577,6 +3729,7 @@ function TorneoView({ players, history, onBack, onSavePlayers, onSaveTournament 
           {isRivals && renderKillsPanel()}
           {isAzure && renderAzurePanel()}
           {game?.id === "volley" && renderVolleyPanel()}
+          {game?.id === "basketball" && renderBasketballPanel()}
           <button onClick={() => setPhase(format === 'direct' ? "setup" : "liguilla")} className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold w-fit"
             style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.09)", color: "#a0a0b8" }}>
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
@@ -3586,13 +3739,13 @@ function TorneoView({ players, history, onBack, onSavePlayers, onSaveTournament 
           <SectionTitle sub="Haz clic en el jugador que ganó cada enfrentamiento">CUADRO DE ELIMINACIÓN — {game.name.toUpperCase()}</SectionTitle>
 
           <div className="rounded-2xl p-6" style={{ background: "linear-gradient(160deg, #0f0f1a, #09090f)", border: `1px solid ${game.border}`, boxShadow: `0 0 60px ${game.glow}` }}>
-            <BracketView bracket={bracket} setBracket={setBracket} standings={standings} color={game.color} glow={game.glow} border={game.border} isRivals={isRivals} isAzure={isAzure} isVolley={isVolley} isClashRoyale={isClashRoyale} />
+            <BracketView bracket={bracket} setBracket={setBracket} standings={standings} color={game.color} glow={game.glow} border={game.border} isRivals={isRivals} isAzure={isAzure} isVolley={isVolley} isBasketball={isBasketball} isClashRoyale={isClashRoyale} />
           </div>
-          {bracket.champion && (
+          {(bracket.champion || (bracket.final[0].player && bracket.final[1].player && bracket.finalSeries.some((game) => game.home !== null && game.away !== null))) && (
             <div className="rounded-2xl p-5 border border-white/10 bg-[#0f0f1a]">
               <p className="text-sm font-semibold mb-3" style={{ color: "#fcd34d", fontFamily: "'Barlow Condensed', sans-serif" }}>FINALIZAR TORNEO</p>
               <p className="text-xs mb-3" style={{ color: "#a0a0b8", fontFamily: "JetBrains Mono,monospace" }}>
-                Campeón: <span style={{ color: game.color, fontWeight: 700 }}>{bracket.champion}</span>
+                Campeón: <span style={{ color: game.color, fontWeight: 700 }}>{bracket.champion ?? bracket.final.find((slot) => slot.winner === true)?.player ?? "POR DEFINIR"}</span>
               </p>
               <div className="flex flex-col sm:flex-row gap-3">
                 <Ripple onClick={saveTournament} color="rgba(255,255,255,0.15)"
