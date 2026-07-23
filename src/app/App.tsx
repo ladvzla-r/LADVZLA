@@ -604,9 +604,7 @@ function getVolleyMatchWinner(score: { home: number | null; away: number | null 
 function isValidBasketballScore(score: { home: number | null; away: number | null }) {
   const { home, away } = score;
   if (home === null || away === null) return false;
-  const homeWins = home >= 15 && home > away;
-  const awayWins = away >= 15 && away > home;
-  return homeWins || awayWins;
+  return home !== away;
 }
 
 function getBasketballMatchWinner(score: { home: number | null; away: number | null }, home: string, away: string) {
@@ -2586,7 +2584,8 @@ function BracketView({ bracket, setBracket, standings, color, glow, border, isRi
         next.finalSeries.filter((game) => {
           if (game.home === null || game.away === null) return false;
           if (isRivals) return isValidRivalsScore(game) && (isHome ? game.home > game.away : game.away > game.home);
-          if (isVolley || isBasketball) return isValidVolleyScore(game) && (isHome ? game.home > game.away : game.away > game.home);
+          if (isVolley) return isValidVolleyScore(game) && (isHome ? game.home > game.away : game.away > game.home);
+          if (isBasketball) return isValidBasketballScore(game) && (isHome ? game.home > game.away : game.away > game.home);
           if (isClashRoyale) return isValidClashRoyaleScore(game) && (isHome ? game.home > game.away : game.away > game.home);
           return false;
         }).length;
@@ -2621,7 +2620,8 @@ function BracketView({ bracket, setBracket, standings, color, glow, border, isRi
     : bracket.finalSeries.filter((game) => {
       if (game.home === null || game.away === null) return false;
       if (isRivals) return isValidRivalsScore(game) && game.home > game.away;
-      if (isVolley || isBasketball) return isValidVolleyScore(game) && game.home > game.away;
+      if (isVolley) return isValidVolleyScore(game) && game.home > game.away;
+      if (isBasketball) return isValidBasketballScore(game) && game.home > game.away;
       if (isClashRoyale) return isValidClashRoyaleScore(game) && game.home > game.away;
       return game.home > game.away;
     }).length;
@@ -2630,7 +2630,8 @@ function BracketView({ bracket, setBracket, standings, color, glow, border, isRi
     : bracket.finalSeries.filter((game) => {
       if (game.home === null || game.away === null) return false;
       if (isRivals) return isValidRivalsScore(game) && game.away > game.home;
-      if (isVolley || isBasketball) return isValidVolleyScore(game) && game.away > game.home;
+      if (isVolley) return isValidVolleyScore(game) && game.away > game.home;
+      if (isBasketball) return isValidBasketballScore(game) && game.away > game.home;
       if (isClashRoyale) return isValidClashRoyaleScore(game) && game.away > game.home;
       return game.away > game.home;
     }).length;
@@ -2901,11 +2902,13 @@ function TorneoView({ players, history, onBack, onSavePlayers, onSaveTournament 
     ? computeRivalsStandings(teamNames, rounds, teamScores)
     : isAzure
       ? computeAzureStandings(teamNames, rounds, teamScores)
-      : isVolley || isBasketball
-        ? computeBasketballStandings(teamNames, rounds, teamScores)
-        : isClashRoyale
-          ? computeClashRoyaleStandings(selectedPlayers, rounds, teamScores)
-          : computeStandings(selectedPlayers, rounds, results);
+      : isVolley
+        ? computeVolleyStandings(teamNames, rounds, teamScores)
+        : isBasketball
+          ? computeBasketballStandings(teamNames, rounds, teamScores)
+          : isClashRoyale
+            ? computeClashRoyaleStandings(selectedPlayers, rounds, teamScores)
+            : computeStandings(selectedPlayers, rounds, results);
   const allPlayed = rounds.every((round) =>
     round.matches.every(([home, away]) => {
       const key = `${round.round}|${home}|${away}`;
@@ -3282,7 +3285,9 @@ function TorneoView({ players, history, onBack, onSavePlayers, onSaveTournament 
                   : null
               : isVolley
                 ? teamScores[key] ? getVolleyMatchWinner(teamScores[key], home, away) : null
-                : results[key] || null;
+                : isBasketball
+                  ? teamScores[key] ? getBasketballMatchWinner(teamScores[key], home, away) : null
+                  : results[key] || null;
           if (!winner) continue;
           const loser = winner === home ? away : home;
           addResult(winner, loser);
@@ -3306,7 +3311,15 @@ function TorneoView({ players, history, onBack, onSavePlayers, onSaveTournament 
         const awayPlayer = bracket.final[1].player;
         for (const game of bracket.finalSeries) {
           if (game.home === null || game.away === null) continue;
-          const winner = game.home > game.away ? homePlayer : game.away > game.home ? awayPlayer : null;
+          const winner = isBasketball
+            ? getBasketballMatchWinner(game, homePlayer, awayPlayer)
+            : isVolley
+              ? getVolleyMatchWinner(game, homePlayer, awayPlayer)
+              : game.home > game.away
+                ? homePlayer
+                : game.away > game.home
+                  ? awayPlayer
+                  : null;
           if (!winner) continue;
           const loser = winner === homePlayer ? awayPlayer : homePlayer;
           addResult(winner, loser);
