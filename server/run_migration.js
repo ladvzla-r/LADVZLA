@@ -45,3 +45,4 @@ const __dirname = path.dirname(__filename);
     process.exit(1);
   }
 })();
+

@@ -375,18 +375,45 @@ const TOURNAMENTS: TournamentDef[] = [
       extra: "La ventana de stats por jugador acompaña el torneo para registrar puntos, asistencias, dribles y bloqueos.",
       sections: [
         {
-          title: "Fase de liga",
+          title: "Formato liguilla",
           lines: [
-            "Cada duelo es entre duos.",
-            "La ruleta define los enfrentamientos.",
-            "La clasificación va por diferencia de puntos y porcentaje de victorias.",
+            "Equipo de dos, decide la ruleta.",
+            "Todos contra todos ida y vuelta.",
+            "Top 1 y 2 pasan a la final.",
+            "Empate en victorias, desempate con diferencia de puntos.",
+            "Empate en puntos, top 2 vs top 3.",
           ],
         },
         {
           title: "Fase final",
           lines: [
-            "Final al mejor de 3 partidos.",
-            "Se determina al equipo que gana 2 sets.",
+            "Enfrentamiento top 1 vs top 2 al mejor de 3.",
+            "Top 1 ventaja de posesión del balón en caso de tercer juego.",
+          ],
+        },
+        {
+          title: "Reglas básicas",
+          lines: [
+            "Ruleta decide que categoría de personaje usar (legendario, mítico, milagro).",
+            "La sección de milagro solo es válido usar personajes que pertenecen o pertenecieron alguna vez a la categoría, ej: switcher, referee o hisoka.",
+            "Están estrictamente prohibidos los estilos limitados.",
+            "Elección de personaje en liguilla 1 vez.",
+            "Cambio de personaje solo válido una vez culminada la liguilla y antes de la final.",
+            "En caso de tocar milagro y no tener giros, puedes jugar con legendarios o míticos, y si es menor en rango usar del mismo o menor.",
+            "No hacer puntos con compañeros o rivales afk.",
+            "No abandonar partida.",
+            "Llegar a tiempo antes de cada duelo.",
+            "No cruzar la cancha si la posesión te corresponde con equipos incompletos.",
+            "Cada duelo de ida y vuelta tendrá ventaja de posesión de balón para cada equipo.",
+          ],
+        },
+        {
+          title: "Sanciones",
+          lines: [
+            "Infringir una norma entrega 4 puntos al rival y bloqueo de despertar.",
+            "Infringir dos normas entrega 8 puntos al rival y bloqueos de cualquier habilidad.",
+            "Infringir más de tres normas pierde el partido automático.",
+            "Cualquier error o sanción se puede revisar y corregir con el VAR.",
           ],
         },
       ],
@@ -3819,6 +3846,7 @@ export default function App() {
   const [view, setView] = useState<View>("menu");
   const [players, setPlayers] = useState<Player[]>(INITIAL_PLAYERS);
   const [tournamentHistory, setTournamentHistory] = useState<TournamentRecord[]>([]);
+  const [hasHydratedPersistence, setHasHydratedPersistence] = useState(false);
 
   const handleDeletePlayer = async (name: string) => {
     const player = players.find((p) => p.name === name);
@@ -3876,6 +3904,15 @@ export default function App() {
 
   useEffect(() => {
     if (typeof window === "undefined") return;
+    let playersLoaded = false;
+    let tournamentsLoaded = false;
+
+    const finishHydration = () => {
+      if (playersLoaded && tournamentsLoaded) {
+        setHasHydratedPersistence(true);
+      }
+    };
+
     // Load players from API (fallback to localStorage if API unavailable)
     (async () => {
       try {
@@ -3884,6 +3921,8 @@ export default function App() {
           const list = await res.json();
           if (Array.isArray(list) && list.length > 0) {
             setPlayers(list);
+            playersLoaded = true;
+            finishHydration();
             return;
           }
           throw new Error('api returned empty players list');
@@ -3898,6 +3937,9 @@ export default function App() {
           }
         } catch (e) {
           console.warn('Failed to load players from API and localStorage', e);
+        } finally {
+          playersLoaded = true;
+          finishHydration();
         }
       }
     })();
@@ -3913,6 +3955,8 @@ export default function App() {
               id: record.id ?? `${record.date}-${Math.random().toString(16).slice(2, 8)}`,
               hidden: record.hidden ?? false,
             })));
+            tournamentsLoaded = true;
+            finishHydration();
             return;
           }
         }
@@ -3935,27 +3979,30 @@ export default function App() {
         }
       } catch (error) {
         console.warn("Failed to load tournament history from localStorage", error);
+      } finally {
+        tournamentsLoaded = true;
+        finishHydration();
       }
     })();
   }, []);
 
   useEffect(() => {
-    if (typeof window === "undefined") return;
+    if (typeof window === "undefined" || !hasHydratedPersistence) return;
     try {
       window.localStorage.setItem(PLAYER_STORAGE_KEY, JSON.stringify(players));
     } catch (error) {
       console.warn("Failed to save players to localStorage", error);
     }
-  }, [players]);
+  }, [players, hasHydratedPersistence]);
 
   useEffect(() => {
-    if (typeof window === "undefined") return;
+    if (typeof window === "undefined" || !hasHydratedPersistence) return;
     try {
       window.localStorage.setItem(TOURNAMENT_HISTORY_KEY, JSON.stringify(tournamentHistory));
     } catch (error) {
       console.warn("Failed to save tournament history to localStorage", error);
     }
-  }, [tournamentHistory]);
+  }, [tournamentHistory, hasHydratedPersistence]);
 
   return (
     <div style={{ fontFamily: "'Barlow', sans-serif" }}>
