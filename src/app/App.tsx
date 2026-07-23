@@ -429,12 +429,27 @@ const TOURNAMENTS: TournamentDef[] = [
       extra: "No hay liguilla; solo bracket directo a partir de la selección inicial.",
       sections: [
         {
-          title: "Bracket Cobblemon",
+          title: "Fase de Combate",
           lines: [
-            "5 jugadores: wildcard entre los 2 de menor ELO; el ganador avanza a semifinales con los otros 3.",
-            "6 jugadores: sorteo aleatorio en bracket de 8 con 2 byes. Puesto 6 y 5 avanzan directo a semifinales.",
-            "Los ganadores de cada semifinal avanzan a la final.",
-            "No hay liguilla ni rondas de grupo.",
+            "1) Los combates (en caso de ser 5) se harán mediante sorteos y serán de eliminación directa, es decir que se sortearán y definirán los cuadros por orden de ruleta, del 1 - 3 tienen sus lugares en la semifinal ya, en cambio el 4 y 5 tienen que jugar una wildcard de Serie Única para ver quien ocupa el otro espacio de semifinal.",
+            "2) En caso de ser 6, se harán unos cuartos de final donde los puestos 5 - 6 estarán en fase Bye esperando por los otros combatientes. Todo por aleatorio.",
+            "3) En caso de 7, se harán unos cuartos de final donde solo el 7 estará en Bye esperando.",
+            "4) En caso de 8 se hará un torneo con Cuartos de final, Semifinal, Final.",
+          ],
+        },
+        {
+          title: "Reglas Básicas",
+          lines: [
+            "1) Los Pokémons pueden estar a cualquier nivel, después de todo el torneo siempre se disputará en Pokémons al LVL.50 por defecto.",
+            "2) No puedes llevar Pokémons repetidos, ejemplo: 2 Snorlax, 2 Greninjas etc….",
+            "3) No puedes llevar ni un Pokemon Legendario, Ultra – Ente o Mítico. Ver Guía.",
+            "4) Los Pokémons pueden llevar objetos que aumenten sus estadísticas o alteren habilidades dentro del juego.",
+            "5) No están permitidos Objetos de Curación, Revivirs, ni Caramelos raro ni ningún objeto que alteren por fuera a un Pokemon, de usarse la batalla se le dará por derrota automática.",
+            "6) Se pueden llevar de 10 Pokémons, 6 de tu Startup más 4 Comodines.",
+            "7) Si quieres cambiar de Pokémons con los de tu PC, hacerlo antes de subir a la Arena De Combate.",
+            "8) Regla del Sleep Mode: No se permite dormir a más de un Pokémon del rival al mismo tiempo. Si un Pokémon del rival ya está dormido por un movimiento tuyo, no puedes usar un movimiento de sueño contra otro de sus Pokémon hasta que el primero se despierte o caiga debilitado (las habilidades como Efecto Espora quedan exentas si ocurren por azar).",
+            "9) Está completamente prohibido Pokémons con IV’s modificados. Los IV’s son talentos naturales de los Pokémons diferente a los EV’s que si está permitido su modificación alterada.",
+            "10) Si tu crees que el Pokemon de tu rival tiene sus IV’s modificados, puedes pedir su revisión, y el acusado tendrá que compartir pantalla obligatoriamente y mostrar los IV’s de su Pokemon, si llega a salir en pantalla un IV modificado como “Defense 13(31)”, el acusado será penalizado con la derrota de 1 combate y el Pokemon descalificado. Mas sin embargo el acusado no tiene ni un IV’s modificados el acusante tendrá su pelea siguiente por derrota sin importar en que fase este.",
           ],
         },
       ],
