@@ -3882,10 +3882,13 @@ export default function App() {
         const res = await fetch(`${API_BASE}/api/players`);
         if (res.ok) {
           const list = await res.json();
-          setPlayers(Array.isArray(list) ? list : []);
-        } else {
-          throw new Error('api error');
+          if (Array.isArray(list) && list.length > 0) {
+            setPlayers(list);
+            return;
+          }
+          throw new Error('api returned empty players list');
         }
+        throw new Error('api error');
       } catch (err) {
         try {
           const stored = window.localStorage.getItem(PLAYER_STORAGE_KEY);
@@ -3904,15 +3907,16 @@ export default function App() {
         const res = await fetch(`${API_BASE}/api/tournaments`);
         if (res.ok) {
           const list = await res.json();
-          if (Array.isArray(list)) {
+          if (Array.isArray(list) && list.length > 0) {
             setTournamentHistory(list.map((record: TournamentRecord) => ({
               ...record,
               id: record.id ?? `${record.date}-${Math.random().toString(16).slice(2, 8)}`,
               hidden: record.hidden ?? false,
             })));
+            return;
           }
-          return;
         }
+        throw new Error('api returned empty tournament history');
       } catch (err) {
         console.warn('Failed to load tournaments from API', err);
       }
