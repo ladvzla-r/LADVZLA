@@ -1484,6 +1484,21 @@ function HistorialView({ tournaments, history, onBack, onDeleteTournament, onUpd
                                           </div>
                                         </div>
                                       </div>
+                                    ) : record.gameId === "basketball" ? (
+                                      <div className="lg:col-span-2 rounded-2xl p-4" style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)", minHeight: "160px" }}>
+                                        <p className="text-[10px] uppercase mb-2" style={{ color: "#6b6b88", fontFamily: "JetBrains Mono,monospace" }}>PUNTOS EN EL TORNEO</p>
+                                        <div className="text-sm space-y-2 max-h-52 overflow-y-auto" style={{ color: "#c8c8d8", fontFamily: "JetBrains Mono,monospace" }}>
+                                          {record.participants
+                                            .map((player) => [player, record.playerStats?.[player]?.points ?? 0] as [string, number])
+                                            .sort((a, b) => b[1] - a[1])
+                                            .map(([player, points]) => (
+                                              <div key={player} className="flex justify-between gap-2">
+                                                <span>{player}</span>
+                                                <span>{points}</span>
+                                              </div>
+                                            ))}
+                                        </div>
+                                      </div>
                                     ) : (
                                       <div className="lg:col-span-2 rounded-2xl p-4" style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)", minHeight: "160px" }}>
                                         <p className="text-[10px] uppercase mb-2" style={{ color: "#6b6b88", fontFamily: "JetBrains Mono,monospace" }}>Kills</p>
