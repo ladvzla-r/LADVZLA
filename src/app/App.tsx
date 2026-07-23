@@ -2697,8 +2697,8 @@ function BracketView({ bracket, setBracket, standings, color, glow, border, isRi
                           <div className="flex items-center gap-2">
                             <span className="text-[10px] uppercase" style={{ color: "#6b6b88", fontFamily: "JetBrains Mono,monospace" }}>{homePlayer ?? "A"}</span>
                             <div className="w-10 h-10 rounded-2xl flex items-center justify-center font-bold" style={{ background: winner === homePlayer ? `${color}25` : "rgba(255,255,255,0.06)", color: winner === homePlayer ? "#e8e8f0" : "#c8c8d8" }}>
-                              <input type="text" inputMode="numeric" pattern="[0-9]*" min={0} max={isAzure ? undefined : isVolley ? 25 : isRivals ? 5 : isClashRoyale ? 3 : 9} value={game.home ?? ""} onChange={(e) => {
-                                const nextValue = e.target.value === "" ? null : Math.max(0, Math.min(isAzure ? Number.MAX_SAFE_INTEGER : isVolley ? 25 : isRivals ? 5 : isClashRoyale ? 3 : 9, Number(e.target.value)));
+                              <input type="text" inputMode="numeric" pattern="[0-9]*" min={0} max={isAzure || isBasketball ? undefined : isVolley ? 25 : isRivals ? 5 : isClashRoyale ? 3 : undefined} value={game.home ?? ""} onChange={(e) => {
+                                const nextValue = e.target.value === "" ? null : Math.max(0, Math.min(isAzure || isBasketball ? Number.MAX_SAFE_INTEGER : isVolley ? 25 : isRivals ? 5 : isClashRoyale ? 3 : Number.MAX_SAFE_INTEGER, Number(e.target.value)));
                                 updateFinalSeriesScore(index, "home", Number.isFinite(nextValue) ? nextValue : null);
                               }}
                                 className="w-full h-full text-center bg-transparent outline-none score-input" style={{ color: "#e8e8f0", WebkitTextFillColor: "#e8e8f0", fontFamily: "'Barlow Condensed', sans-serif", fontSize: "14px" }} />
@@ -2707,8 +2707,8 @@ function BracketView({ bracket, setBracket, standings, color, glow, border, isRi
                           <span className="text-[10px] font-semibold text-center" style={{ color: "#6b6b88", fontFamily: "JetBrains Mono,monospace" }}>vs</span>
                           <div className="flex items-center gap-2 justify-end">
                             <div className="w-10 h-10 rounded-2xl flex items-center justify-center font-bold" style={{ background: winner === awayPlayer ? `${color}25` : "rgba(255,255,255,0.06)", color: winner === awayPlayer ? "#e8e8f0" : "#c8c8d8" }}>
-                              <input type="text" inputMode="numeric" pattern="[0-9]*" min={0} max={isAzure ? undefined : isVolley ? 25 : isRivals ? 5 : isClashRoyale ? 3 : 9} value={game.away ?? ""} onChange={(e) => {
-                                const nextValue = e.target.value === "" ? null : Math.max(0, Math.min(isAzure ? Number.MAX_SAFE_INTEGER : isVolley ? 25 : isRivals ? 5 : isClashRoyale ? 3 : 9, Number(e.target.value)));
+                              <input type="text" inputMode="numeric" pattern="[0-9]*" min={0} max={isAzure || isBasketball ? undefined : isVolley ? 25 : isRivals ? 5 : isClashRoyale ? 3 : undefined} value={game.away ?? ""} onChange={(e) => {
+                                const nextValue = e.target.value === "" ? null : Math.max(0, Math.min(isAzure || isBasketball ? Number.MAX_SAFE_INTEGER : isVolley ? 25 : isRivals ? 5 : isClashRoyale ? 3 : Number.MAX_SAFE_INTEGER, Number(e.target.value)));
                                 updateFinalSeriesScore(index, "away", Number.isFinite(nextValue) ? nextValue : null);
                               }}
                                 className="w-full h-full text-center bg-transparent outline-none score-input" style={{ color: "#e8e8f0", WebkitTextFillColor: "#e8e8f0", fontFamily: "'Barlow Condensed', sans-serif", fontSize: "14px" }} />
@@ -2773,6 +2773,7 @@ function TorneoView({ players, history, onBack, onSavePlayers, onSaveTournament 
   const [showBasketballPanel, setShowBasketballPanel] = useState(true);
   const [mvpPlayer, setMvpPlayer] = useState<string | null>(null);
   const [bestServer, setBestServer] = useState<string | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
   const [edition, setEdition] = useState(1);
   const [managedBy, setManagedBy] = useState("Rikardo");
   const [savedTournament, setSavedTournament] = useState(false);
@@ -3207,7 +3208,9 @@ function TorneoView({ players, history, onBack, onSavePlayers, onSaveTournament 
   };
 
   const saveTournament = async () => {
+    if (isSaving || savedTournament) return;
     if (!game || (isTeamSport ? !teamNames.length : selectedPlayers.length < 2)) return;
+    setIsSaving(true);
     let champion = bracket.champion;
     const finalWinner = bracket.final.find((slot) => slot.winner === true)?.player ?? null;
     if (!champion && finalWinner) {
@@ -3366,6 +3369,8 @@ function TorneoView({ players, history, onBack, onSavePlayers, onSaveTournament 
     } catch (err) {
       console.warn('API tournament save failed, saving locally instead.', err);
       finalizeSave(record);
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -3750,8 +3755,8 @@ function TorneoView({ players, history, onBack, onSavePlayers, onSaveTournament 
               <div className="flex flex-col sm:flex-row gap-3">
                 <Ripple onClick={saveTournament} color="rgba(255,255,255,0.15)"
                   className="flex-1 py-3 rounded-2xl text-center font-bold"
-                  style={{ background: "rgba(124,58,237,0.18)", border: "1px solid rgba(124,58,237,0.35)", color: "#a78bfa", fontFamily: "'Barlow Condensed', sans-serif", letterSpacing: "0.06em" }}>
-                  GUARDAR TORNEO
+                  style={{ background: isSaving ? "rgba(255,255,255,0.04)" : "rgba(124,58,237,0.18)", border: isSaving ? "1px solid rgba(255,255,255,0.08)" : "1px solid rgba(124,58,237,0.35)", color: isSaving ? "#6b6b88" : "#a78bfa", fontFamily: "'Barlow Condensed', sans-serif", letterSpacing: "0.06em" }}>
+                  {isSaving ? "GUARDANDO..." : "GUARDAR TORNEO"}
                 </Ripple>
               </div>
             </div>
