@@ -184,6 +184,21 @@ const TOURNAMENTS: TournamentDef[] = [
             "Minigun y armas exóticas como las de láser.",
           ],
         },
+        {
+          title: "Mapas cerrados y armas prohibidas",
+          lines: [
+            "El Fuego (Lanza Bengalas y Molotov) junto con el Hielo están prohibidos en mapas de espacio cerrado.",
+            "Estos mapas cerrados son: Arena, Big Arena, Sandbox, Construction, Bridge, Backrooms, Big Backrooms y Dimension.",
+          ],
+        },
+        {
+          title: "Sanciones",
+          lines: [
+            "Infringir 1 norma implica entregarle 2 rondas al rival.",
+            "Infringir 2 normas implica entregar 2 rondas al rival más el baneo del arma principal.",
+            "Infringir 3 normas implica perder la partida automáticamente.",
+          ],
+        },
       ],
     },
   },
