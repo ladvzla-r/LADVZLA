@@ -2451,10 +2451,12 @@ function BracketView({ bracket, setBracket, standings, color, glow, border, isRi
         (next.sf1 as [BracketSlot, BracketSlot]) = [{ player: match[0].player, winner: match[0].player === winner }, { player: match[1].player, winner: match[1].player === winner }];
         next.final = [{ player: winner }, next.final[1]];
         next.third = [{ player: loser }, next.third[1]];
+        next.champion = null;
       } else if (matchKey === "sf2") {
         (next.sf2 as [BracketSlot, BracketSlot]) = [{ player: match[0].player, winner: match[0].player === winner }, { player: match[1].player, winner: match[1].player === winner }];
         next.final = [next.final[0], { player: winner }];
         next.third = [next.third[0], { player: loser }];
+        next.champion = null;
       } else if (matchKey === "final") {
         (next.final as [BracketSlot, BracketSlot]) = [{ player: match[0].player, winner: match[0].player === winner }, { player: match[1].player, winner: match[1].player === winner }];
         next.champion = winner;
