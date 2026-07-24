@@ -3472,7 +3472,9 @@ function TorneoView({ players, history, onBack, onSavePlayers, onSaveTournament 
       kills: killsByPlayer,
       champion,
       runnerUp,
-        thirdPlace,
+      thirdPlace,
+      mvp: mvpPlayer,
+      playerStats: computeRecordPlayerStats(),
       managedBy: (typeof window !== "undefined" && window.localStorage.getItem(ADMIN_SESSION_KEY)) || managedBy.trim() || "Rikardo",
     };
 
