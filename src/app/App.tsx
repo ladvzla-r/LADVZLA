@@ -2633,38 +2633,74 @@ function BracketView({ bracket, setBracket, standings, color, glow, border, isRi
 }) {
   const handleWin = (matchKey: keyof BracketState, winner: string) => {
     setBracket((prev) => {
-      const next = { ...prev };
+      const cloneSlot = (slot: BracketSlot): BracketSlot => ({ player: slot.player, winner: slot.winner });
+      const cloneMatch = (match: [BracketSlot, BracketSlot]): [BracketSlot, BracketSlot] => [cloneSlot(match[0]), cloneSlot(match[1])];
+
+      const next = {
+        ...prev,
+        qf1: prev.qf1 ? cloneMatch(prev.qf1) : undefined,
+        qf2: prev.qf2 ? cloneMatch(prev.qf2) : undefined,
+        sf1: cloneMatch(prev.sf1),
+        sf2: cloneMatch(prev.sf2),
+        final: cloneMatch(prev.final),
+        third: cloneMatch(prev.third),
+      } as BracketState;
+
       const match = prev[matchKey] as [BracketSlot, BracketSlot];
       const loser = match.find((s) => s.player !== winner)?.player ?? null;
+      const previousWinner = match.find((s) => s.winner === true)?.player ?? null;
+      const previousLoser = match.find((s) => s.winner === false)?.player ?? null;
 
-      const assignWinnerToSlot = (slot: [BracketSlot, BracketSlot], winnerPlayer: string) => {
-        const emptyIndex = slot.findIndex((s) => !s.player);
-        if (emptyIndex !== -1) {
-          slot[emptyIndex] = { player: winnerPlayer };
+      const clearPlayerFromSlot = (slot: [BracketSlot, BracketSlot], player: string | null) => {
+        if (!player) return;
+        for (let i = 0; i < 2; i++) {
+          if (slot[i].player === player) {
+            slot[i] = { player: null };
+          }
         }
       };
 
+      const fillWinnerIntoSlot = (slot: [BracketSlot, BracketSlot], winnerPlayer: string) => {
+        const emptyIndex = slot.findIndex((s) => !s.player);
+        if (emptyIndex !== -1) {
+          slot[emptyIndex] = { player: winnerPlayer };
+          return true;
+        }
+        return false;
+      };
+
+      const updateMatch = (slot: [BracketSlot, BracketSlot]) => [{ player: slot[0].player, winner: slot[0].player === winner }, { player: slot[1].player, winner: slot[1].player === winner }];
+
       if (matchKey === "qf1") {
-        (next.qf1 as [BracketSlot, BracketSlot]) = [{ player: match[0].player, winner: match[0].player === winner }, { player: match[1].player, winner: match[1].player === winner }];
-        assignWinnerToSlot(next.sf1, winner);
+        next.qf1 = updateMatch(match as [BracketSlot, BracketSlot]);
+        clearPlayerFromSlot(next.sf1, previousWinner);
+        clearPlayerFromSlot(next.sf2, previousWinner);
+        if (!fillWinnerIntoSlot(next.sf1, winner)) {
+          fillWinnerIntoSlot(next.sf2, winner);
+        }
       } else if (matchKey === "qf2") {
-        (next.qf2 as [BracketSlot, BracketSlot]) = [{ player: match[0].player, winner: match[0].player === winner }, { player: match[1].player, winner: match[1].player === winner }];
-        assignWinnerToSlot(next.sf2, winner);
+        next.qf2 = updateMatch(match as [BracketSlot, BracketSlot]);
+        clearPlayerFromSlot(next.sf2, previousWinner);
+        fillWinnerIntoSlot(next.sf2, winner);
       } else if (matchKey === "sf1") {
-        (next.sf1 as [BracketSlot, BracketSlot]) = [{ player: match[0].player, winner: match[0].player === winner }, { player: match[1].player, winner: match[1].player === winner }];
-        next.final = [{ player: winner }, next.final[1]];
-        next.third = [{ player: loser }, next.third[1]];
+        next.sf1 = updateMatch(match as [BracketSlot, BracketSlot]);
+        clearPlayerFromSlot(next.final, previousWinner);
+        clearPlayerFromSlot(next.third, previousLoser);
+        next.final = [{ player: winner }, cloneSlot(next.final[1])];
+        next.third = [{ player: loser }, cloneSlot(next.third[1])];
         next.champion = null;
       } else if (matchKey === "sf2") {
-        (next.sf2 as [BracketSlot, BracketSlot]) = [{ player: match[0].player, winner: match[0].player === winner }, { player: match[1].player, winner: match[1].player === winner }];
-        next.final = [next.final[0], { player: winner }];
-        next.third = [next.third[0], { player: loser }];
+        next.sf2 = updateMatch(match as [BracketSlot, BracketSlot]);
+        clearPlayerFromSlot(next.final, previousWinner);
+        clearPlayerFromSlot(next.third, previousLoser);
+        next.final = [cloneSlot(next.final[0]), { player: winner }];
+        next.third = [cloneSlot(next.third[0]), { player: loser }];
         next.champion = null;
       } else if (matchKey === "final") {
-        (next.final as [BracketSlot, BracketSlot]) = [{ player: match[0].player, winner: match[0].player === winner }, { player: match[1].player, winner: match[1].player === winner }];
+        next.final = updateMatch(match as [BracketSlot, BracketSlot]);
         next.champion = winner;
       } else if (matchKey === "third") {
-        (next.third as [BracketSlot, BracketSlot]) = [{ player: match[0].player, winner: match[0].player === winner }, { player: match[1].player, winner: match[1].player === winner }];
+        next.third = updateMatch(match as [BracketSlot, BracketSlot]);
       }
       return next;
     });
