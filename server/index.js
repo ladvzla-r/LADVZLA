@@ -113,10 +113,22 @@ app.post('/api/tournaments', async (req, res) => {
   }
 
   try {
-    const gameRes = await pool.query('SELECT id FROM games WHERE key_name = $1', [record.gameId]);
-    if (!gameRes.rows.length) return res.status(400).json({ error: 'unknown gameId' });
-    const gameId = gameRes.rows[0].id;
-    const tournamentName = `Torneo ${record.gameId} Edición ${record.edition || 1}`;
+    const gameKey = String(record.gameId).trim();
+    let gameRes = await pool.query('SELECT id FROM games WHERE key_name = $1', [gameKey]);
+    let gameId = gameRes.rows[0]?.id;
+
+    if (!gameId) {
+      const displayName = gameKey
+        .replace(/[-_]/g, " ")
+        .replace(/([a-z])([A-Z])/g, "$1 $2")
+        .replace(/\b\w/g, (char) => char.toUpperCase());
+      await pool.query('INSERT INTO games(key_name, display_name) VALUES($1, $2) ON CONFLICT (key_name) DO NOTHING', [gameKey, displayName]);
+      gameRes = await pool.query('SELECT id FROM games WHERE key_name = $1', [gameKey]);
+      gameId = gameRes.rows[0]?.id;
+    }
+
+    if (!gameId) return res.status(400).json({ error: 'unknown gameId' });
+    const tournamentName = `Torneo ${gameKey} Edición ${record.edition || 1}`;
     const startDate = record.date ? record.date.slice(0, 10) : null;
 
     const tournamentRes = await pool.query(

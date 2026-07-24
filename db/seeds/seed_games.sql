@@ -4,5 +4,7 @@ INSERT INTO games (key_name, display_name) VALUES
   ('azure', 'Azure'),
   ('volley', 'Volley'),
   ('basketball', 'Basketball'),
-  ('clash', 'Clash')
+  ('clash', 'Clash Royale'),
+  ('clashroyale', 'Clash Royale'),
+  ('cobblemon', 'Cobblemon')
 ON CONFLICT (key_name) DO NOTHING;

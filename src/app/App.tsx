@@ -22,6 +22,9 @@ interface PlayerStat {
   dribbles?: number;
   blocks?: number;
   cups?: number;
+  bronzeMedals?: number;
+  plateMedals?: number;
+  goldMedals?: number;
 }
 
 interface Player {
@@ -73,6 +76,9 @@ interface TournamentPlayerStats {
   dribbles?: number;
   blocks?: number;
   cups?: number;
+  bronzeMedals?: number;
+  plateMedals?: number;
+  goldMedals?: number;
 }
 
 type TournamentRecord = {
@@ -188,7 +194,7 @@ const TOURNAMENTS: TournamentDef[] = [
           title: "Mapas cerrados y armas prohibidas",
           lines: [
             "El Fuego (Lanza Bengalas y Molotov) junto con el Hielo están prohibidos en mapas de espacio cerrado.",
-            "Estos mapas cerrados son: Arena, Big Arena, Sandbox, Construction, Bridge, Backrooms, Big Backrooms y Dimension.",
+            "Estos mapas cerrados son: Arena, Big Arena, Sandbox, Construction, Bridge, Studio, Backrooms, Big Backrooms y Dimension.",
           ],
         },
         {
@@ -513,7 +519,11 @@ const TOURNAMENTS: TournamentDef[] = [
     textColor: "#9ca3af",
     bgStripe: "rgba(209,213,219,0.08)",
     icon: "⚪️",
-    extraCols: [],
+    extraCols: [
+      { label: "Bronze Medals", key: "bronzeMedals" },
+      { label: "Plate Medals", key: "plateMedals" },
+      { label: "Gold Medals", key: "goldMedals" },
+    ],
     stats: [],
     rules: {
       format: "Eliminación directa 1v1",
@@ -1989,8 +1999,8 @@ function JugadoresView({ players, history, onPlayers, onDeletePlayer, onBack }: 
               {[
                 { label: "WIN RATE", value: `${d.rate}%`, color: d.rate >= 55 ? "#a78bfa" : d.rate >= 45 ? "#e8e8f0" : "#f87171" },
                 { label: "W / L", value: `${d.totalW} / ${d.totalL}`, color: "#e8e8f0" },
-                { label: "MVPs", value: d.totalMVP, color: "#fcd34d" },
-                { label: "TÍTULOS", value: d.totalTitles, color: "#fcd34d" },
+                { label: "MVPs - TORNEOS", value: `${d.totalMVP} / ${d.totalTitles}`, color: "#fcd34d" },
+                { label: "PARTIDOS", value: `${d.totalW + d.totalL}`, color: "#e8e8f0" },
               ].map(({ label, value, color }) => (
                 <div key={label} className="px-6 py-5" style={{ background: "#0f0f1a" }}>
                   <p className="text-[10px] mb-1" style={{ color: "#6b6b88", fontFamily: "JetBrains Mono,monospace" }}>{label}</p>
@@ -2002,19 +2012,47 @@ function JugadoresView({ players, history, onPlayers, onDeletePlayer, onBack }: 
             <div className="px-8 py-6 flex flex-col gap-6">
               {(() => {
                 const volleyTitles = computeVolleyTitles(selected);
-                const hasVolleyHistory = history.some((record) => record.gameId === "volley");
-                if (!hasVolleyHistory) return null;
+                const awards = profileData(selected).games.flatMap((g) => {
+                  if (g.t.id === 'cobblemon') {
+                    return [
+                      { label: 'Bronze Medals (CM)', value: g.bronzeMedals ?? 0, color: g.t.color },
+                      { label: 'Plate Medals (CM)', value: g.plateMedals ?? 0, color: g.t.color },
+                      { label: 'Gold Medals (CM)', value: g.goldMedals ?? 0, color: g.t.color },
+                    ];
+                  }
+
+                  const label = g.t.id === 'volley'
+                    ? 'MVPs (Vb)'
+                    : g.t.id === 'rivals'
+                      ? 'MVPs (Rv)'
+                      : g.t.id === 'basketball'
+                        ? 'MVPs (Bb)'
+                        : g.t.id === 'azure'
+                          ? 'MVPs (Al)'
+                          : g.t.id === 'clashroyale'
+                            ? 'MVPs (Cr)'
+                            : 'MVPs';
+                  const items = [{ label, value: g.mvp, color: g.t.color }];
+
+                  if (g.t.id === 'volley') {
+                    items.push(
+                      { label: 'Mejor sacador', value: volleyTitles.bestServer, color: g.t.color },
+                      { label: 'King Of The Air', value: volleyTitles.kingOfTheAir, color: g.t.color },
+                      { label: 'King Of The Court', value: volleyTitles.kingOfTheCourt, color: g.t.color },
+                      { label: 'King Of The Wall', value: volleyTitles.kingOfTheWall, color: g.t.color },
+                    );
+                  }
+
+                  return items;
+                });
+
+                if (!awards.length) return null;
+
                 return (
                   <div className="rounded-[28px] p-5" style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)" }}>
                     <p className="text-xs font-semibold tracking-widest uppercase mb-4" style={{ color: "#6b6b88", fontFamily: "JetBrains Mono,monospace" }}>TÍTULOS INDIVIDUALES</p>
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                      {[
-                        { label: "MVP", value: volleyTitles.mvp },
-                        { label: "Mejor sacador", value: volleyTitles.bestServer },
-                        { label: "King Of The Air", value: volleyTitles.kingOfTheAir },
-                        { label: "King Of The Court", value: volleyTitles.kingOfTheCourt },
-                        { label: "King Of The Wall", value: volleyTitles.kingOfTheWall },
-                      ].map((item) => (
+                      {awards.map((item) => (
                         <div key={item.label} className="rounded-2xl p-4" style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)" }}>
                           <p className="text-[10px] uppercase mb-2" style={{ color: "#6b6b88", fontFamily: "JetBrains Mono,monospace" }}>{item.label}</p>
                           <p className="text-2xl font-semibold" style={{ color: "#e8e8f0", fontFamily: "'Barlow Condensed', sans-serif" }}>{item.value}</p>
