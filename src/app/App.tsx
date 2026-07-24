@@ -88,6 +88,7 @@ type TournamentRecord = {
   participants: string[];
   champion: string;
   runnerUp?: string | null;
+  thirdPlace?: string | null;
   mvp: string | null;
   bestServer?: string | null;
   kills: Record<string, number>;
@@ -3325,6 +3326,7 @@ function TorneoView({ players, history, onBack, onSavePlayers, onSaveTournament 
       : (bracket.final[0].player && bracket.final[1].player)
         ? (bracket.final[0].player === champion ? bracket.final[1].player : bracket.final[0].player)
         : standings[1]?.player ?? null;
+    const thirdPlace = bracket.third.find((slot) => slot.winner === true)?.player ?? null;
 
     const computeRecordPlayerStats = () => {
       const winningPlayers = championTeam?.players ?? (champion ? [champion] : []);
@@ -3342,6 +3344,9 @@ function TorneoView({ players, history, onBack, onSavePlayers, onSaveTournament 
           assists: isVolley || isBasketball ? (volleyAssistsByPlayer[player] ?? 0) : undefined,
           dribbles: isBasketball ? (basketballDribblesByPlayer[player] ?? 0) : undefined,
           blocks: isVolley || isBasketball ? (volleyBlocksByPlayer[player] ?? 0) : undefined,
+          goldMedals: player === champion && game?.id === 'cobblemon' ? 1 : 0,
+          plateMedals: player === runnerUp && game?.id === 'cobblemon' ? 1 : 0,
+          bronzeMedals: player === thirdPlace && game?.id === 'cobblemon' ? 1 : 0,
         }])
       );
 
@@ -3432,14 +3437,7 @@ function TorneoView({ players, history, onBack, onSavePlayers, onSaveTournament 
       kills: killsByPlayer,
       champion,
       runnerUp,
-      mvp: mvpPlayer,
-      bestServer,
-      playerStats: computeRecordPlayerStats(),
-      teamScores: isTeamSport ? teamScores : undefined,
-      azureCharacters: isAzure ? azureAssignments : undefined,
-      finalMatch: phase === "bracket" ? { home: bracket.final[0].player, away: bracket.final[1].player, series: bracket.finalSeries } : undefined,
-      format,
-      edition: Number.isFinite(edition) && edition > 0 ? edition : 1,
+        thirdPlace,
       managedBy: (typeof window !== "undefined" && window.localStorage.getItem(ADMIN_SESSION_KEY)) || managedBy.trim() || "Rikardo",
     };
 
