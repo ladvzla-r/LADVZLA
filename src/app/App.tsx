@@ -521,9 +521,9 @@ const TOURNAMENTS: TournamentDef[] = [
     bgStripe: "rgba(209,213,219,0.08)",
     icon: "⚪️",
     extraCols: [
-      { label: "Bronze Medals", key: "bronzeMedals" },
-      { label: "Plate Medals", key: "plateMedals" },
-      { label: "Gold Medals", key: "goldMedals" },
+      { label: "Medallas de Bronce", key: "bronzeMedals" },
+      { label: "Medallas de Plata", key: "plateMedals" },
+      { label: "Medallas de Oro", key: "goldMedals" },
     ],
     stats: [],
     rules: {
@@ -2016,12 +2016,11 @@ function JugadoresView({ players, history, onPlayers, onDeletePlayer, onBack }: 
                 const awards = profileData(selected).games.flatMap((g) => {
                   if (g.t.id === 'cobblemon') {
                     return [
-                      { label: 'Bronze Medals (CM)', value: g.bronzeMedals ?? 0, color: g.t.color },
-                      { label: 'Plate Medals (CM)', value: g.plateMedals ?? 0, color: g.t.color },
-                      { label: 'Gold Medals (CM)', value: g.goldMedals ?? 0, color: g.t.color },
+                      { label: 'Terceros lugares (CM)', value: g.bronzeMedals ?? 0, color: g.t.color },
+                      { label: 'Subcampeonatos (CM)', value: g.plateMedals ?? 0, color: g.t.color },
+                      { label: 'Trofeos (CM)', value: g.goldMedals ?? 0, color: g.t.color },
                     ];
                   }
-
                   const label = g.t.id === 'volley'
                     ? 'MVPs (Vb)'
                     : g.t.id === 'rivals'
