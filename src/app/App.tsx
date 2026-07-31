@@ -1490,9 +1490,6 @@ function HistorialView({ tournaments, history, onBack, onDeleteTournament, onUpd
                                   <button onClick={() => startEditingRecord(recordId, record)} className="rounded-full px-3 py-2 text-[11px] font-semibold" style={{ background: "rgba(99,102,241,0.15)", color: "#c7d2fe", fontFamily: "JetBrains Mono,monospace", border: "1px solid rgba(99,102,241,0.2)" }}>
                                     Editar
                                   </button>
-                                  <button onClick={() => onDeleteTournament(recordId)} className="rounded-full px-3 py-2 text-[11px] font-semibold" style={{ background: "rgba(255,77,109,0.15)", color: "#ff9aa3", fontFamily: "JetBrains Mono,monospace", border: "1px solid rgba(255,77,109,0.2)" }}>
-                                    Eliminar
-                                  </button>
                                 </>
                               )}
                             </div>
@@ -3537,12 +3534,6 @@ function TorneoView({ players, history, onBack, onSavePlayers, onSaveTournament 
     }
   };
 
-  useEffect(() => {
-    setIsAdmin(false);
-    setAdminPinError(false);
-    setAdminPin("");
-  }, [phase]);
-
   const getActiveAdminCredentials = () => {
     const savedAdminName = typeof window !== "undefined" ? window.localStorage.getItem(ADMIN_SESSION_KEY) : null;
     const savedAdminPin = savedAdminName
@@ -3756,6 +3747,7 @@ function TorneoView({ players, history, onBack, onSavePlayers, onSaveTournament 
     const saved = window.localStorage.getItem(ADMIN_SESSION_KEY);
     if (saved) {
       setManagedBy(saved);
+      setIsAdmin(true);
     }
   }, []);
 
@@ -4157,6 +4149,45 @@ const PLAYER_STORAGE_KEY = "ladvzla_players";
 const TOURNAMENT_HISTORY_KEY = "ladvzla_tournament_history";
 const ADMIN_SESSION_KEY = "ladvzla_admin_session";
 
+function mergePlayersWithPersisted(serverPlayers: Player[], persistedPlayers: Player[]): Player[] {
+  const persistedByName = new Map(persistedPlayers.map((player) => [player.name.toLowerCase(), player]));
+  const persistedById = new Map(
+    persistedPlayers.filter((player) => typeof player.id === "number").map((player) => [player.id, player])
+  );
+
+  const merged = serverPlayers.map((player) => {
+    const persisted = typeof player.id === "number" ? persistedById.get(player.id) : undefined;
+    const byName = persistedByName.get(player.name.toLowerCase());
+    const base = persisted ?? byName;
+
+    if (!base) return player;
+
+    return {
+      ...player,
+      ...base,
+      id: player.id ?? base.id,
+      name: player.name || base.name,
+      avatar: player.avatar ?? base.avatar,
+      statsOverrides: base.statsOverrides ?? player.statsOverrides,
+      totalKills: base.totalKills ?? player.totalKills,
+      participations: base.participations ?? player.participations,
+      tournamentsWon: base.tournamentsWon ?? player.tournamentsWon,
+      mvps: base.mvps ?? player.mvps,
+      elo: base.elo ?? player.elo,
+    };
+  });
+
+  for (const persisted of persistedPlayers) {
+    const exists = merged.some((player) =>
+      (typeof persisted.id === "number" && player.id === persisted.id) ||
+      player.name.toLowerCase() === persisted.name.toLowerCase()
+    );
+    if (!exists) merged.push({ ...persisted });
+  }
+
+  return merged;
+}
+
 export default function App() {
   const [view, setView] = useState<View>("menu");
   const [players, setPlayers] = useState<Player[]>(INITIAL_PLAYERS);
@@ -4259,6 +4290,17 @@ export default function App() {
       }
     };
 
+    let persistedPlayers: Player[] | null = null;
+    try {
+      const stored = window.localStorage.getItem(PLAYER_STORAGE_KEY);
+      if (stored) {
+        const parsed: Player[] = JSON.parse(stored);
+        if (Array.isArray(parsed)) persistedPlayers = parsed;
+      }
+    } catch (e) {
+      console.warn('Failed to read persisted players from localStorage', e);
+    }
+
     // Load players from API (fallback to localStorage if API unavailable)
     (async () => {
       try {
@@ -4266,7 +4308,7 @@ export default function App() {
         if (res.ok) {
           const list = await res.json();
           if (Array.isArray(list) && list.length > 0) {
-            setPlayers(list);
+            setPlayers(mergePlayersWithPersisted(list, persistedPlayers ?? []));
             playersLoaded = true;
             finishHydration();
             return;
@@ -4276,10 +4318,8 @@ export default function App() {
         throw new Error('api error');
       } catch (err) {
         try {
-          const stored = window.localStorage.getItem(PLAYER_STORAGE_KEY);
-          if (stored) {
-            const parsed: Player[] = JSON.parse(stored);
-            if (Array.isArray(parsed)) setPlayers(parsed);
+          if (persistedPlayers) {
+            setPlayers(persistedPlayers);
           }
         } catch (e) {
           console.warn('Failed to load players from API and localStorage', e);
