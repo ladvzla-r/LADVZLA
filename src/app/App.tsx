@@ -303,6 +303,9 @@ const TOURNAMENTS: TournamentDef[] = [
       { label: "Pts", key: "points" },
       { label: "Asistencias", key: "assists" },
       { label: "Bloqueos", key: "blocks" },
+      { label: "KoA", key: "kingOfTheAir" },
+      { label: "KoW", key: "kingOfTheWall" },
+      { label: "KoC", key: "kingOfTheCourt" },
     ],
     stats: [
       { player: "Vortex",    w: 16, l: 6,  streak: 4,  mvp: 4, tournamentsWon: 2, points: 42, assists: 18, blocks: 11 },
@@ -897,14 +900,23 @@ function getRecordPlayerStats(record: TournamentRecord, playerName: string, game
   const titleCount = record.champion === playerName ? 1 : 0;
   const mvpCount = record.mvp === playerName ? 1 : 0;
   const base = record.playerStats?.[playerName];
+  const extraKeys = TOURNAMENTS.find((t) => t.id === gameId)?.extraCols ?? [];
   const extraStats = Object.fromEntries(
-    (TOURNAMENTS.find((t) => t.id === gameId)?.extraCols ?? []).map((col) => [col.key, (base as Record<string, number | undefined> | undefined)?.[col.key] ?? 0])
+    extraKeys.map((col) => [col.key, (base as Record<string, number | undefined> | undefined)?.[col.key] ?? 0])
   );
+
+  if (gameId === "volley") {
+    if (computeVolleyTrophyWinner(record, "points") === playerName) extraStats.kingOfTheAir = (extraStats.kingOfTheAir ?? 0) + 1;
+    if (computeVolleyTrophyWinner(record, "assists") === playerName) extraStats.kingOfTheCourt = (extraStats.kingOfTheCourt ?? 0) + 1;
+    if (computeVolleyTrophyWinner(record, "blocks") === playerName) extraStats.kingOfTheWall = (extraStats.kingOfTheWall ?? 0) + 1;
+  }
+
   if (base) {
+    const played = (typeof base.played === "number" && base.played > 0) ? base.played : base.w + base.l;
     return {
       w: base.w,
       l: base.l,
-      played: base.played,
+      played,
       kills: record.kills[playerName] ?? base.kills,
       titles: base.titles ?? titleCount,
       mvps: base.mvps ?? mvpCount,
@@ -920,7 +932,7 @@ function getRecordPlayerStats(record: TournamentRecord, playerName: string, game
     titles: titleCount,
     mvps: mvpCount,
     participations: participates ? 1 : 0,
-    ...Object.fromEntries((TOURNAMENTS.find((t) => t.id === gameId)?.extraCols ?? []).map((col) => [col.key, 0])),
+    ...Object.fromEntries(extraKeys.map((col) => [col.key, 0])),
   };
 }
 
@@ -979,6 +991,10 @@ function buildGameStats(gameId: string, players: Player[], history: TournamentRe
         stats[player.name][key] = value;
       }
     }
+  }
+
+  for (const player of players) {
+    stats[player.name].played = stats[player.name].w + stats[player.name].l;
   }
 
   return players.map((player) => ({
@@ -1873,7 +1889,7 @@ function JugadoresView({ players, history, onPlayers, onDeletePlayer, onBack }: 
   const [editing, setEditing] = useState<string | null>(null);
   const [editValue, setEditValue] = useState("");
   const [statsGameId, setStatsGameId] = useState("rivals");
-  const [statsForm, setStatsForm] = useState({ wins: "", losses: "", titles: "", mvps: "", participations: "", kills: "" });
+  const [statsForm, setStatsForm] = useState<Record<string, string>>({ wins: "", losses: "", titles: "", mvps: "", participations: "" });
 
   const profileData = (player: string) => {
     const games = TOURNAMENTS.map((t) => {
@@ -1939,14 +1955,16 @@ function JugadoresView({ players, history, onPlayers, onDeletePlayer, onBack }: 
     if (!selected) return;
     const currentPlayer = players.find((p) => p.name === selected);
     const override = currentPlayer?.statsOverrides?.[statsGameId];
-    setStatsForm({
-      wins: override?.wins?.toString() ?? "",
-      losses: override?.losses?.toString() ?? "",
-      titles: override?.titles?.toString() ?? "",
-      mvps: override?.mvps?.toString() ?? "",
-      participations: override?.participations?.toString() ?? "",
-      kills: override?.kills?.toString() ?? "",
-    });
+    const selectedGame = TOURNAMENTS.find((t) => t.id === statsGameId);
+    const fields = [
+      { key: "wins", label: "W" },
+      { key: "losses", label: "L" },
+      { key: "titles", label: "Títulos" },
+      { key: "mvps", label: "MVPs" },
+      { key: "participations", label: "Participaciones" },
+      ...(selectedGame?.extraCols ?? []).map((col) => ({ key: col.key, label: col.label })),
+    ];
+    setStatsForm(Object.fromEntries(fields.map((field) => [field.key, override?.[field.key]?.toString() ?? ""])));
   }, [selected, statsGameId, players]);
 
   const tryPin = () => {
@@ -2071,26 +2089,28 @@ function JugadoresView({ players, history, onPlayers, onDeletePlayer, onBack }: 
 
     const nextOverrides = { ...(currentPlayer.statsOverrides ?? {}) };
     const selectedGame = TOURNAMENTS.find((t) => t.id === statsGameId);
-    const normalizedValues = {
-      wins: statsForm.wins === "" ? undefined : Number(statsForm.wins),
-      losses: statsForm.losses === "" ? undefined : Number(statsForm.losses),
-      titles: statsForm.titles === "" ? undefined : Number(statsForm.titles),
-      mvps: statsForm.mvps === "" ? undefined : Number(statsForm.mvps),
-      participations: statsForm.participations === "" ? undefined : Number(statsForm.participations),
-      kills: statsForm.kills === "" ? undefined : Number(statsForm.kills),
-    };
+    const fields = [
+      { key: "wins", label: "W" },
+      { key: "losses", label: "L" },
+      { key: "titles", label: "Títulos" },
+      { key: "mvps", label: "MVPs" },
+      { key: "participations", label: "Participaciones" },
+      ...(selectedGame?.extraCols ?? []).map((col) => ({ key: col.key, label: col.label })),
+    ];
+    const nextEntry = { ...(nextOverrides[statsGameId] ?? {}) };
 
-    if (selectedGame?.id === "azure") {
-      normalizedValues.kills = undefined;
-    }
-    if (selectedGame?.id === "volley" || selectedGame?.id === "basketball") {
-      normalizedValues.kills = undefined;
-    }
+    fields.forEach((field) => {
+      const rawValue = statsForm[field.key] ?? "";
+      const numericValue = rawValue === "" ? undefined : Number(rawValue);
+      if (typeof numericValue === "number" && Number.isFinite(numericValue)) {
+        nextEntry[field.key] = numericValue;
+      } else {
+        delete nextEntry[field.key];
+      }
+    });
 
-    const hasValues = Object.values(normalizedValues).some((value) => typeof value === "number");
-    if (hasValues) {
-      const currentGameOverride = { ...(nextOverrides[statsGameId] ?? {}) };
-      nextOverrides[statsGameId] = { ...currentGameOverride, ...normalizedValues };
+    if (Object.keys(nextEntry).length > 0) {
+      nextOverrides[statsGameId] = nextEntry;
     } else {
       delete nextOverrides[statsGameId];
     }
@@ -2218,17 +2238,8 @@ function JugadoresView({ players, history, onPlayers, onDeletePlayer, onBack }: 
                         { key: "titles", label: "Títulos" },
                         { key: "mvps", label: "MVPs" },
                         { key: "participations", label: "Participaciones" },
-                      ] as Array<{ key: keyof typeof statsForm; label: string }>;
-
-                      if (selectedGame?.id === "rivals") {
-                        fields.push({ key: "kills", label: "Kills" });
-                      }
-                      if (selectedGame?.id === "azure") {
-                        fields.push({ key: "kills", label: "Goles" });
-                      }
-                      if (selectedGame?.id === "volley" || selectedGame?.id === "basketball") {
-                        fields.push({ key: "kills", label: selectedGame.id === "volley" ? "Puntos" : "Puntos" });
-                      }
+                        ...(selectedGame?.extraCols ?? []).map((col) => ({ key: col.key, label: col.label })),
+                      ];
 
                       return fields.map((field) => (
                         <label key={field.key} className="flex flex-col gap-2 text-xs" style={{ color: "#a0a0b8", fontFamily: "JetBrains Mono,monospace" }}>
@@ -2236,7 +2247,7 @@ function JugadoresView({ players, history, onPlayers, onDeletePlayer, onBack }: 
                           <input
                             type="number"
                             min="0"
-                            value={statsForm[field.key]}
+                            value={statsForm[field.key] ?? ""}
                             onChange={(e) => setStatsForm((prev) => ({ ...prev, [field.key]: e.target.value }))}
                             className="rounded-xl px-3 py-2 text-sm"
                             style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.1)", color: "#e8e8f0" }}
