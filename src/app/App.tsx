@@ -2426,7 +2426,7 @@ function ReglasView({ onBack }: { onBack: () => void }) {
 
 const ADMIN_PINS: Record<string, string> = {
   "1325": "Rikardo",
-  "2102": "Juan",
+  "2303": "Juan",
 };
 
 function AdminView({ players, onPlayers, onDeletePlayer, onBack }: { players: Player[]; onPlayers: (p: Player[]) => void; onDeletePlayer: (name: string) => void; onBack: () => void }) {
@@ -2619,7 +2619,7 @@ function AdminView({ players, onPlayers, onDeletePlayer, onBack }: { players: Pl
           ))}
         </div>
 
-        <p className="text-center text-xs" style={{ color: "#3a3a50", fontFamily: "JetBrains Mono,monospace" }}>PINs: Rikardo 1325 · Juan 2102 · Cámbialos en el código si es necesario</p>
+        <p className="text-center text-xs" style={{ color: "#3a3a50", fontFamily: "JetBrains Mono,monospace" }}>PINs: Rikardo 1325 · Juan 2303</p>
       </div>
     </div>
   );
@@ -3401,9 +3401,25 @@ function TorneoView({ players, history, onBack, onSavePlayers, onSaveTournament 
     }
   };
 
+  const getActiveAdminCredentials = () => {
+    const savedAdminName = typeof window !== "undefined" ? window.localStorage.getItem(ADMIN_SESSION_KEY) : null;
+    const savedAdminPin = savedAdminName
+      ? Object.entries(ADMIN_PINS).find(([, name]) => name === savedAdminName)?.[0]
+      : undefined;
+
+    return {
+      username: savedAdminName || "Juan",
+      password: savedAdminPin || adminPin || "2303",
+    };
+  };
+
   const saveTournament = async () => {
     if (isSaving || savedTournament) return;
     if (!game || (isTeamSport ? !teamNames.length : selectedPlayers.length < 2)) return;
+    if (!isAdmin) {
+      setAdminPinError(true);
+      return;
+    }
     setIsSaving(true);
     let champion = bracket.champion;
     const finalWinner = bracket.final.find((slot) => slot.winner === true)?.player ?? null;
@@ -3563,9 +3579,14 @@ function TorneoView({ players, history, onBack, onSavePlayers, onSaveTournament 
     };
 
     try {
+      const { username, password } = getActiveAdminCredentials();
       const res = await fetch(`${API_BASE}/api/tournaments`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'x-admin-username': username,
+          'x-admin-password': password,
+        },
         body: JSON.stringify(record),
       });
       if (!res.ok) {
