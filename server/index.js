@@ -12,6 +12,21 @@ app.use(express.static(path.join(process.cwd(), 'dist')));
 
 const pool = new Pool({ connectionString: process.env.DATABASE_URL || 'postgres://postgres:postgres@localhost:5432/ladvzla' });
 
+// Helper: validate admin credentials sent via headers
+async function checkAdminCredentials(req) {
+  const username = String(req.headers['x-admin-username'] || '').trim();
+  const password = String(req.headers['x-admin-password'] || '').trim();
+  if (!username || !password) return false;
+  try {
+    const { rows } = await pool.query('SELECT can_manage_tournaments FROM admins WHERE username = $1 AND password = $2 LIMIT 1', [username, password]);
+    if (!rows.length) return false;
+    return !!rows[0].can_manage_tournaments;
+  } catch (err) {
+    console.error('Admin check error', err);
+    return false;
+  }
+}
+
 app.get('/api/players', async (req, res) => {
   try {
     const { rows } = await pool.query('SELECT id, name, photo_url FROM players ORDER BY name');
@@ -107,6 +122,14 @@ app.get('/api/tournaments', async (req, res) => {
 });
 
 app.post('/api/tournaments', async (req, res) => {
+  // Require admin credentials to add tournaments
+  try {
+    const allowed = await checkAdminCredentials(req);
+    if (!allowed) return res.status(401).json({ error: 'unauthorized' });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ error: 'failed' });
+  }
   const record = req.body;
   if (!record || !record.gameId || !record.participants || !Array.isArray(record.participants)) {
     return res.status(400).json({ error: 'invalid tournament record' });
@@ -188,9 +211,61 @@ app.post('/api/tournaments', async (req, res) => {
   }
 });
 
+app.put('/api/tournaments/:id', async (req, res) => {
+  const id = String(req.params.id || '').trim();
+  if (!id) return res.status(400).json({ error: 'id required' });
+
+  try {
+    const allowed = await checkAdminCredentials(req);
+    if (!allowed) return res.status(401).json({ error: 'unauthorized' });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ error: 'failed' });
+  }
+
+  const record = req.body;
+  if (!record || !record.gameId || !record.participants || !Array.isArray(record.participants)) {
+    return res.status(400).json({ error: 'invalid tournament record' });
+  }
+
+  try {
+    const tournamentRes = await pool.query(
+      'SELECT tournament_id FROM tournament_records WHERE record->>\'id\' = $1 LIMIT 1',
+      [id]
+    );
+    const tournamentId = tournamentRes.rows[0]?.tournament_id;
+    if (!tournamentId) return res.status(404).json({ error: 'not found' });
+
+    const updatedRecord = { ...record, id };
+    const gameKey = String(record.gameId).trim();
+    const tournamentName = `Torneo ${gameKey} Edición ${record.edition || 1}`;
+    const startDate = record.date ? record.date.slice(0, 10) : null;
+
+    await pool.query(
+      'UPDATE tournaments SET name = $1, start_date = $2 WHERE id = $3',
+      [tournamentName, startDate, tournamentId]
+    );
+    await pool.query('UPDATE tournament_records SET record = $1 WHERE tournament_id = $2', [updatedRecord, tournamentId]);
+
+    res.json(updatedRecord);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'failed' });
+  }
+});
+
 app.delete('/api/tournaments/:id', async (req, res) => {
   const id = String(req.params.id || '').trim();
   if (!id) return res.status(400).json({ error: 'id required' });
+
+  // Require admin credentials to delete tournaments
+  try {
+    const allowed = await checkAdminCredentials(req);
+    if (!allowed) return res.status(401).json({ error: 'unauthorized' });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ error: 'failed' });
+  }
 
   try {
     let tournamentId = null;

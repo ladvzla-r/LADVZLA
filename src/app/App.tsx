@@ -91,6 +91,7 @@ type TournamentRecord = {
   thirdPlace?: string | null;
   mvp: string | null;
   bestServer?: string | null;
+  note?: string | null;
   kills: Record<string, number>;
   playerStats?: Record<string, TournamentPlayerStats>;
   liguillaResults?: Record<string, string>;
@@ -1270,11 +1271,20 @@ function HistorialView({ tournaments, history, onBack, onDeleteTournament, onUpd
   const [editingRecordId, setEditingRecordId] = useState<string | null>(null);
   const [editChampion, setEditChampion] = useState("");
   const [editRunnerUp, setEditRunnerUp] = useState("");
+  const [editMvp, setEditMvp] = useState<string | null>(null);
+  const [editEdition, setEditEdition] = useState("1");
+  const [editNote, setEditNote] = useState("");
   const [editError, setEditError] = useState("");
   const selectedGame = selectedGameId ? tournaments.find((t) => t.id === selectedGameId) : null;
   const filteredHistory = selectedGameId
     ? history.filter((record) => record.gameId === selectedGameId)
     : [];
+  const sortedHistory = [...filteredHistory].sort((a, b) => {
+    const editionA = Number(a.edition ?? 1);
+    const editionB = Number(b.edition ?? 1);
+    if (editionB !== editionA) return editionB - editionA;
+    return new Date(b.date).getTime() - new Date(a.date).getTime();
+  });
   const toggleRecord = (id: string) => setExpandedRecords((prev) => ({ ...prev, [id]: !prev[id] }));
 
   const tryAdminPin = () => {
@@ -1294,6 +1304,9 @@ function HistorialView({ tournaments, history, onBack, onDeleteTournament, onUpd
     setEditingRecordId(recordId);
     setEditChampion(record.champion);
     setEditRunnerUp(record.runnerUp ?? "");
+    setEditMvp(record.mvp ?? null);
+    setEditEdition(String(record.edition ?? 1));
+    setEditNote(record.note ?? "");
     setEditError("");
   };
 
@@ -1303,10 +1316,18 @@ function HistorialView({ tournaments, history, onBack, onDeleteTournament, onUpd
       setEditError("El nombre del campeón no puede quedar vacío.");
       return;
     }
+    const editionValue = Number(editEdition);
+    if (!Number.isInteger(editionValue) || editionValue < 1) {
+      setEditError("La edición debe ser un número entero mayor o igual a 1.");
+      return;
+    }
     onUpdateTournament({
       ...record,
       champion: championValue,
       runnerUp: editRunnerUp.trim() || null,
+      mvp: editMvp ?? null,
+      edition: editionValue,
+      note: editNote.trim() || null,
     });
     setEditingRecordId(null);
     setEditError("");
@@ -1408,9 +1429,10 @@ function HistorialView({ tournaments, history, onBack, onDeleteTournament, onUpd
                 </div>
               ) : (
                 <div className="space-y-4">
-                  {filteredHistory.slice().reverse().map((record, index) => {
+                  {sortedHistory.map((record, index) => {
                     const recordId = record.id ?? `${record.date}-${index}`;
                     const expanded = expandedRecords[recordId];
+                    const participantOptions = Array.from(new Set([...(record.participants ?? []), record.mvp ?? "", editMvp ?? ""])).filter(Boolean) as string[];
                     return (
                       <div key={recordId} className="rounded-3xl p-5" style={{ background: "rgba(255,255,255,0.03)", border: `1px solid ${selectedGame.border}` }}>
                         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
@@ -1421,6 +1443,9 @@ function HistorialView({ tournaments, history, onBack, onDeleteTournament, onUpd
                                       <h3 className="text-xl font-extrabold" style={{ color: "#e8e8f0", fontFamily: "'Barlow Condensed', sans-serif" }}>Campeón: {record.champion}</h3>
                                       {record.runnerUp && (
                                         <p className="text-sm mt-1" style={{ color: "#a0a0b8", fontFamily: "JetBrains Mono,monospace" }}>Subcampeón: {record.runnerUp}</p>
+                                      )}
+                                      {record.note && (
+                                        <p className="text-sm mt-2" style={{ color: "#fbbf24", fontFamily: "JetBrains Mono,monospace" }}>Nota: {record.note}</p>
                                       )}
                                     </div>
                           <div className="flex flex-col sm:items-end gap-3">
@@ -1590,6 +1615,41 @@ function HistorialView({ tournaments, history, onBack, onDeleteTournament, onUpd
                                       <input
                                         value={editRunnerUp}
                                         onChange={(e) => setEditRunnerUp(e.target.value)}
+                                        className="w-full mt-2 rounded-2xl px-4 py-3 text-sm"
+                                        style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.12)", color: "#e8e8f0", fontFamily: "JetBrains Mono,monospace" }}
+                                      />
+                                    </label>
+                                    <label className="text-sm" style={{ color: "#c8c8d8", fontFamily: "JetBrains Mono,monospace" }}>
+                                      Edición
+                                      <input
+                                        type="number"
+                                        min="1"
+                                        value={editEdition}
+                                        onChange={(e) => setEditEdition(e.target.value)}
+                                        className="w-full mt-2 rounded-2xl px-4 py-3 text-sm"
+                                        style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.12)", color: "#e8e8f0", fontFamily: "JetBrains Mono,monospace" }}
+                                      />
+                                    </label>
+                                    <label className="text-sm sm:col-span-2" style={{ color: "#c8c8d8", fontFamily: "JetBrains Mono,monospace" }}>
+                                      MVP
+                                      <select
+                                        value={editMvp ?? ""}
+                                        onChange={(e) => setEditMvp(e.target.value || null)}
+                                        className="w-full mt-2 rounded-2xl px-4 py-3 text-sm"
+                                        style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.12)", color: "#e8e8f0", fontFamily: "JetBrains Mono,monospace" }}
+                                      >
+                                        <option value="">-- Ninguno --</option>
+                                        {participantOptions.map((player) => (
+                                          <option key={player} value={player}>{player}</option>
+                                        ))}
+                                      </select>
+                                    </label>
+                                    <label className="text-sm sm:col-span-2" style={{ color: "#c8c8d8", fontFamily: "JetBrains Mono,monospace" }}>
+                                      Nota
+                                      <textarea
+                                        value={editNote}
+                                        onChange={(e) => setEditNote(e.target.value)}
+                                        rows={3}
                                         className="w-full mt-2 rounded-2xl px-4 py-3 text-sm"
                                         style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.12)", color: "#e8e8f0", fontFamily: "JetBrains Mono,monospace" }}
                                       />
@@ -3364,6 +3424,10 @@ function TorneoView({ players, history, onBack, onSavePlayers, onSaveTournament 
     const thirdPlace = bracket.third.find((slot) => slot.winner === true)?.player ?? null;
 
     const computeRecordPlayerStats = () => {
+      const teamLookup = new Map(
+        (isTeamSport ? buildRivalsTeams(selectedPlayers) : []).map((team) => [team.team, team.players])
+      );
+      const getPlayersForResult = (result: string) => teamLookup.get(result) ?? [result];
       const winningPlayers = championTeam?.players ?? (champion ? [champion] : []);
       const stats: Record<string, TournamentPlayerStats> = Object.fromEntries(
         selectedPlayers.map((player) => [player, {
@@ -3386,22 +3450,11 @@ function TorneoView({ players, history, onBack, onSavePlayers, onSaveTournament 
       );
 
       const addResult = (winner: string, loser: string) => {
-        const winnerPlayers = (isRivals || isVolley || isBasketball)
-          ? buildRivalsTeams(selectedPlayers).find((team) => team.team === winner)?.players ?? []
-          : isAzure
-            ? buildRivalsTeams(selectedPlayers).find((team) => team.team === winner)?.players ?? []
-            : [winner];
-        const loserPlayers = (isRivals || isVolley || isBasketball)
-          ? buildRivalsTeams(selectedPlayers).find((team) => team.team === loser)?.players ?? []
-          : isAzure
-            ? buildRivalsTeams(selectedPlayers).find((team) => team.team === loser)?.players ?? []
-            : [loser];
-
-        for (const player of winnerPlayers) {
+        for (const player of getPlayersForResult(winner)) {
           stats[player].w += 1;
           stats[player].played += 1;
         }
-        for (const player of loserPlayers) {
+        for (const player of getPlayersForResult(loser)) {
           stats[player].l += 1;
           stats[player].played += 1;
         }
@@ -3430,10 +3483,11 @@ function TorneoView({ players, history, onBack, onSavePlayers, onSaveTournament 
       }
 
       const bracketMatchKeys = ["qf1", "qf2", "sf1", "sf2", "third", "final"] as const;
-      type BracketMatchKey = typeof bracketMatchKeys[number];
+      const hasFinalSeriesScores = bracket.finalSeries.some((game) => game.home !== null || game.away !== null);
       for (const key of bracketMatchKeys) {
         const match = bracket[key] as [BracketSlot, BracketSlot] | undefined;
         if (!match || !match[0].player || !match[1].player) continue;
+        if (key === "final" && hasFinalSeriesScores) continue;
         if (match[0].winner === true && match[1].winner === false) {
           addResult(match[0].player, match[1].player);
         } else if (match[1].winner === true && match[0].winner === false) {
@@ -3464,17 +3518,28 @@ function TorneoView({ players, history, onBack, onSavePlayers, onSaveTournament 
       return stats;
     };
 
-    const record = {
+    const record: TournamentRecord = {
       id: `${Date.now()}-${Math.random().toString(16).slice(2, 8)}`,
       gameId,
       date: new Date().toISOString(),
       participants: selectedPlayers,
-      kills: killsByPlayer,
       champion,
       runnerUp,
       thirdPlace,
       mvp: mvpPlayer,
+      kills: killsByPlayer,
       playerStats: computeRecordPlayerStats(),
+      liguillaResults: Object.fromEntries(
+        rounds.map((round) => [round.round, round.matches.map(([home, away]) => `${home} vs ${away}`).join(" | ")])
+      ),
+      format,
+      teamScores,
+      finalMatch: {
+        home: bracket.final[0].player ?? null,
+        away: bracket.final[1].player ?? null,
+        series: bracket.finalSeries.map((game) => ({ home: game.home, away: game.away })),
+      },
+      edition,
       managedBy: (typeof window !== "undefined" && window.localStorage.getItem(ADMIN_SESSION_KEY)) || managedBy.trim() || "Rikardo",
     };
 
@@ -3978,8 +4043,39 @@ export default function App() {
     }
   };
 
-  const handleUpdateTournament = (updatedRecord: TournamentRecord) => {
+  const handleUpdateTournament = async (updatedRecord: TournamentRecord) => {
+    const previousRecord = tournamentHistory.find((record) => record.id === updatedRecord.id);
+    const previousMvp = previousRecord?.mvp ?? null;
+    const nextMvp = updatedRecord.mvp ?? null;
+
+    try {
+      const res = await fetch(`${API_BASE}/api/tournaments/${encodeURIComponent(updatedRecord.id ?? "")}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updatedRecord),
+      });
+      if (res.ok) {
+        const savedRecord = await res.json();
+        setTournamentHistory((prev) => prev.map((record) => record.id === updatedRecord.id ? { ...record, ...savedRecord, id: savedRecord.id ?? record.id } : record));
+        setPlayers((prev) => prev.map((player) => {
+          let nextMvps = player.mvps ?? 0;
+          if (player.name === previousMvp) nextMvps = Math.max(0, nextMvps - 1);
+          if (player.name === nextMvp) nextMvps += 1;
+          return { ...player, mvps: nextMvps };
+        }));
+        return;
+      }
+    } catch (err) {
+      console.error('Failed to update tournament in API', err);
+    }
+
     setTournamentHistory((prev) => prev.map((record) => record.id === updatedRecord.id ? updatedRecord : record));
+    setPlayers((prev) => prev.map((player) => {
+      let nextMvps = player.mvps ?? 0;
+      if (player.name === previousMvp) nextMvps = Math.max(0, nextMvps - 1);
+      if (player.name === nextMvp) nextMvps += 1;
+      return { ...player, mvps: nextMvps };
+    }));
   };
 
   useEffect(() => {
