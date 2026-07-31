@@ -27,6 +27,16 @@ interface PlayerStat {
   goldMedals?: number;
 }
 
+interface PlayerStatsOverride {
+  wins?: number;
+  losses?: number;
+  titles?: number;
+  mvps?: number;
+  participations?: number;
+  kills?: number;
+  [key: string]: number | undefined;
+}
+
 interface Player {
   id?: number;
   name: string;
@@ -36,6 +46,7 @@ interface Player {
   tournamentsWon?: number;
   mvps?: number;
   elo?: number;
+  statsOverrides?: Record<string, PlayerStatsOverride>;
 }
 
 interface GameRules {
@@ -953,6 +964,23 @@ function buildGameStats(gameId: string, players: Player[], history: TournamentRe
     }
   }
 
+  for (const player of players) {
+    const override = player.statsOverrides?.[gameId];
+    if (!override) continue;
+    if (typeof override.wins === "number") stats[player.name].w = override.wins;
+    if (typeof override.losses === "number") stats[player.name].l = override.losses;
+    if (typeof override.titles === "number") stats[player.name].titles = override.titles;
+    if (typeof override.mvps === "number") stats[player.name].mvps = override.mvps;
+    if (typeof override.participations === "number") stats[player.name].participations = override.participations;
+    if (typeof override.kills === "number") stats[player.name].kills = override.kills;
+    for (const key of extraKeys) {
+      const value = override[key];
+      if (typeof value === "number") {
+        stats[player.name][key] = value;
+      }
+    }
+  }
+
   return players.map((player) => ({
     player: player.name,
     ...stats[player.name],
@@ -965,16 +993,16 @@ function buildGlobalStats(players: Player[], history: TournamentRecord[]) {
     players.map((p) => [p.name, { w: 0, l: 0, played: 0, kills: 0, titles: 0, mvps: 0, participations: 0 }])
   );
 
-  for (const record of history) {
-    for (const player of players) {
-      const rec = getRecordPlayerStats(record, player.name);
-      stats[player.name].w += rec.w;
-      stats[player.name].l += rec.l;
-      stats[player.name].played += rec.played;
-      stats[player.name].kills += rec.kills;
-      stats[player.name].titles += rec.titles;
-      stats[player.name].mvps += rec.mvps;
-      stats[player.name].participations += rec.participations;
+  for (const game of TOURNAMENTS) {
+    const gameStats = buildGameStats(game.id, players, history);
+    for (const row of gameStats) {
+      stats[row.player].w += row.w;
+      stats[row.player].l += row.l;
+      stats[row.player].played += row.played;
+      stats[row.player].kills += row.kills;
+      stats[row.player].titles += row.titles;
+      stats[row.player].mvps += row.mvps;
+      stats[row.player].participations += row.participations;
     }
   }
 
@@ -1847,6 +1875,8 @@ function JugadoresView({ players, history, onPlayers, onDeletePlayer, onBack }: 
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
   const [editing, setEditing] = useState<string | null>(null);
   const [editValue, setEditValue] = useState("");
+  const [statsGameId, setStatsGameId] = useState("rivals");
+  const [statsForm, setStatsForm] = useState({ wins: "", losses: "", titles: "", mvps: "", participations: "", kills: "" });
 
   const profileData = (player: string) => {
     const games = TOURNAMENTS.map((t) => {
@@ -1907,6 +1937,20 @@ function JugadoresView({ players, history, onPlayers, onDeletePlayer, onBack }: 
 
     return counts;
   };
+
+  useEffect(() => {
+    if (!selected) return;
+    const currentPlayer = players.find((p) => p.name === selected);
+    const override = currentPlayer?.statsOverrides?.[statsGameId];
+    setStatsForm({
+      wins: override?.wins?.toString() ?? "",
+      losses: override?.losses?.toString() ?? "",
+      titles: override?.titles?.toString() ?? "",
+      mvps: override?.mvps?.toString() ?? "",
+      participations: override?.participations?.toString() ?? "",
+      kills: override?.kills?.toString() ?? "",
+    });
+  }, [selected, statsGameId, players]);
 
   const tryPin = () => {
     const adminName = ADMIN_PINS[pin];
@@ -2023,6 +2067,40 @@ function JugadoresView({ players, history, onPlayers, onDeletePlayer, onBack }: 
     input.click();
   };
 
+  const saveStatsOverride = () => {
+    if (!selected) return;
+    const currentPlayer = players.find((p) => p.name === selected);
+    if (!currentPlayer) return;
+
+    const nextOverrides = { ...(currentPlayer.statsOverrides ?? {}) };
+    const selectedGame = TOURNAMENTS.find((t) => t.id === statsGameId);
+    const normalizedValues = {
+      wins: statsForm.wins === "" ? undefined : Number(statsForm.wins),
+      losses: statsForm.losses === "" ? undefined : Number(statsForm.losses),
+      titles: statsForm.titles === "" ? undefined : Number(statsForm.titles),
+      mvps: statsForm.mvps === "" ? undefined : Number(statsForm.mvps),
+      participations: statsForm.participations === "" ? undefined : Number(statsForm.participations),
+      kills: statsForm.kills === "" ? undefined : Number(statsForm.kills),
+    };
+
+    if (selectedGame?.id === "azure") {
+      normalizedValues.kills = undefined;
+    }
+    if (selectedGame?.id === "volley" || selectedGame?.id === "basketball") {
+      normalizedValues.kills = undefined;
+    }
+
+    const hasValues = Object.values(normalizedValues).some((value) => typeof value === "number");
+    if (hasValues) {
+      const currentGameOverride = { ...(nextOverrides[statsGameId] ?? {}) };
+      nextOverrides[statsGameId] = { ...currentGameOverride, ...normalizedValues };
+    } else {
+      delete nextOverrides[statsGameId];
+    }
+
+    onPlayers(players.map((player) => player.name === selected ? { ...player, statsOverrides: nextOverrides } : player));
+  };
+
   if (selected) {
     const d = profileData(selected);
     return (
@@ -2122,6 +2200,64 @@ function JugadoresView({ players, history, onPlayers, onDeletePlayer, onBack }: 
                   </div>
                 );
               })()}
+
+              {isAdmin && (
+                <div className="rounded-[28px] p-5" style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)" }}>
+                  <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+                    <div>
+                      <p className="text-xs font-semibold tracking-widest uppercase" style={{ color: "#6b6b88", fontFamily: "JetBrains Mono,monospace" }}>EDITAR ESTADÍSTICAS</p>
+                      <p className="text-sm mt-1" style={{ color: "#c8c8d8" }}>Ajusta los valores que verán las tablas de posiciones.</p>
+                    </div>
+                    <select value={statsGameId} onChange={(e) => setStatsGameId(e.target.value)} className="rounded-xl px-3 py-2 text-sm" style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.1)", color: "#e8e8f0" }}>
+                      {TOURNAMENTS.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
+                    </select>
+                  </div>
+                  <div className="mt-4 grid grid-cols-2 sm:grid-cols-3 gap-3">
+                    {(() => {
+                      const selectedGame = TOURNAMENTS.find((t) => t.id === statsGameId);
+                      const fields = [
+                        { key: "wins", label: "W" },
+                        { key: "losses", label: "L" },
+                        { key: "titles", label: "Títulos" },
+                        { key: "mvps", label: "MVPs" },
+                        { key: "participations", label: "Participaciones" },
+                      ] as Array<{ key: keyof typeof statsForm; label: string }>;
+
+                      if (selectedGame?.id === "rivals") {
+                        fields.push({ key: "kills", label: "Kills" });
+                      }
+                      if (selectedGame?.id === "azure") {
+                        fields.push({ key: "kills", label: "Goles" });
+                      }
+                      if (selectedGame?.id === "volley" || selectedGame?.id === "basketball") {
+                        fields.push({ key: "kills", label: selectedGame.id === "volley" ? "Puntos" : "Puntos" });
+                      }
+
+                      return fields.map((field) => (
+                        <label key={field.key} className="flex flex-col gap-2 text-xs" style={{ color: "#a0a0b8", fontFamily: "JetBrains Mono,monospace" }}>
+                          <span>{field.label}</span>
+                          <input
+                            type="number"
+                            min="0"
+                            value={statsForm[field.key]}
+                            onChange={(e) => setStatsForm((prev) => ({ ...prev, [field.key]: e.target.value }))}
+                            className="rounded-xl px-3 py-2 text-sm"
+                            style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.1)", color: "#e8e8f0" }}
+                          />
+                        </label>
+                      ));
+                    })()}
+                  </div>
+                  <div className="mt-4 flex gap-3">
+                    <Ripple onClick={saveStatsOverride} color="rgba(163,230,53,0.15)" className="px-4 py-2 rounded-xl text-sm font-semibold" style={{ background: "rgba(163,230,53,0.15)", border: "1px solid rgba(163,230,53,0.25)", color: "#bef264" }}>
+                      GUARDAR
+                    </Ripple>
+                    <Ripple onClick={() => setStatsGameId("rivals")} color="rgba(255,255,255,0.08)" className="px-4 py-2 rounded-xl text-sm font-semibold" style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", color: "#6b6b88" }}>
+                      RESETEAR
+                    </Ripple>
+                  </div>
+                </div>
+              )}
 
               <div>
                 <p className="text-xs font-semibold tracking-widest" style={{ color: "#6b6b88", fontFamily: "JetBrains Mono,monospace" }}>POR JUEGO</p>
@@ -3401,6 +3537,12 @@ function TorneoView({ players, history, onBack, onSavePlayers, onSaveTournament 
     }
   };
 
+  useEffect(() => {
+    setIsAdmin(false);
+    setAdminPinError(false);
+    setAdminPin("");
+  }, [phase]);
+
   const getActiveAdminCredentials = () => {
     const savedAdminName = typeof window !== "undefined" ? window.localStorage.getItem(ADMIN_SESSION_KEY) : null;
     const savedAdminPin = savedAdminName
@@ -3613,7 +3755,6 @@ function TorneoView({ players, history, onBack, onSavePlayers, onSaveTournament 
     if (typeof window === "undefined") return;
     const saved = window.localStorage.getItem(ADMIN_SESSION_KEY);
     if (saved) {
-      setIsAdmin(true);
       setManagedBy(saved);
     }
   }, []);
