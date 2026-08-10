@@ -4227,6 +4227,56 @@ function mergePlayersWithPersisted(serverPlayers: Player[], persistedPlayers: Pl
   return merged;
 }
 
+function mergeTournamentsWithPersisted(apiHistory: TournamentRecord[], persistedHistory: TournamentRecord[]): TournamentRecord[] {
+  const normalizeSignature = (record: TournamentRecord) => {
+    return [
+      record.gameId ?? 'unknown',
+      record.date ?? 'unknown',
+      String(record.edition ?? 1),
+      record.champion ?? 'unknown',
+      record.mvp ?? 'unknown',
+      record.runnerUp ?? 'unknown',
+    ].join('|');
+  };
+
+  const buildKey = (record: TournamentRecord) => {
+    if (record.id) return `id:${record.id}`;
+    return `sig:${normalizeSignature(record)}`;
+  };
+
+  const merged = new Map<string, TournamentRecord>();
+
+  for (const record of persistedHistory) {
+    const key = buildKey(record);
+    merged.set(key, { ...record });
+  }
+
+  for (const record of apiHistory) {
+    const apiKey = buildKey(record);
+    if (merged.has(apiKey)) {
+      const existing = merged.get(apiKey)!;
+      merged.set(apiKey, { ...existing, ...record, id: record.id ?? existing.id });
+      continue;
+    }
+
+    const signatureKey = `sig:${normalizeSignature(record)}`;
+    if (merged.has(signatureKey)) {
+      const existing = merged.get(signatureKey)!;
+      merged.set(signatureKey, { ...existing, ...record, id: record.id ?? existing.id });
+      continue;
+    }
+
+    merged.set(apiKey, { ...record });
+  }
+
+  return Array.from(merged.values()).sort((a, b) => {
+    const editionA = Number(a.edition ?? 1);
+    const editionB = Number(b.edition ?? 1);
+    if (editionB !== editionA) return editionB - editionA;
+    return new Date(b.date).getTime() - new Date(a.date).getTime();
+  });
+}
+
 export default function App() {
   const [view, setView] = useState<View>("menu");
   const [players, setPlayers] = useState<Player[]>(INITIAL_PLAYERS);
@@ -4374,45 +4424,53 @@ export default function App() {
       }
     })();
 
+    let persistedTournamentHistory: TournamentRecord[] | null = null;
+    try {
+      const historyStored = window.localStorage.getItem(TOURNAMENT_HISTORY_KEY);
+      if (historyStored) {
+        const parsedHistory: TournamentRecord[] = JSON.parse(historyStored);
+        if (Array.isArray(parsedHistory)) {
+          persistedTournamentHistory = parsedHistory.map((record) => ({
+            ...record,
+            id: record.id ?? `${record.date}-${Math.random().toString(16).slice(2, 8)}`,
+            hidden: record.hidden ?? false,
+          }));
+        }
+      }
+    } catch (error) {
+      console.warn("Failed to load tournament history from localStorage", error);
+    }
+
     (async () => {
       try {
         const res = await fetch(`${API_BASE}/api/tournaments`);
         if (res.ok) {
           const list = await res.json();
-          if (Array.isArray(list) && list.length > 0) {
-            setTournamentHistory(list.map((record: TournamentRecord) => ({
-              ...record,
-              id: record.id ?? `${record.date}-${Math.random().toString(16).slice(2, 8)}`,
-              hidden: record.hidden ?? false,
-            })));
+          if (Array.isArray(list)) {
+            const merged = mergeTournamentsWithPersisted(
+              list.map((record: TournamentRecord) => ({
+                ...record,
+                id: record.id ?? `${record.date}-${Math.random().toString(16).slice(2, 8)}`,
+                hidden: record.hidden ?? false,
+              })),
+              persistedTournamentHistory ?? []
+            );
+            setTournamentHistory(merged);
             tournamentsLoaded = true;
             finishHydration();
             return;
           }
         }
-        throw new Error('api returned empty tournament history');
+        throw new Error('api returned invalid tournament history');
       } catch (err) {
         console.warn('Failed to load tournaments from API', err);
       }
 
-      try {
-        const historyStored = window.localStorage.getItem(TOURNAMENT_HISTORY_KEY);
-        if (historyStored) {
-          const parsedHistory: TournamentRecord[] = JSON.parse(historyStored);
-          if (Array.isArray(parsedHistory)) {
-            setTournamentHistory(parsedHistory.map((record) => ({
-              ...record,
-              id: record.id ?? `${record.date}-${Math.random().toString(16).slice(2, 8)}`,
-              hidden: record.hidden ?? false,
-            })));
-          }
-        }
-      } catch (error) {
-        console.warn("Failed to load tournament history from localStorage", error);
-      } finally {
-        tournamentsLoaded = true;
-        finishHydration();
+      if (persistedTournamentHistory) {
+        setTournamentHistory(persistedTournamentHistory);
       }
+      tournamentsLoaded = true;
+      finishHydration();
     })();
   }, []);
 
