@@ -114,7 +114,25 @@ app.get('/api/tournaments', async (req, res) => {
        JOIN tournaments t ON tr.tournament_id = t.id
        ORDER BY tr.stored_at DESC`
     );
-    res.json(rows.map((r) => ({ ...r.record, id: r.record.id ?? `tournament-${r.tournament_id}` })));
+
+    const result = [];
+    for (const r of rows) {
+      const record = { ...r.record };
+      if (!record.id) {
+        record.id = `tournament-${r.tournament_id}`;
+        try {
+          await pool.query(
+            `UPDATE tournament_records SET record = jsonb_set(record, '{id}', $1::jsonb) WHERE tournament_id = $2`,
+            [JSON.stringify(record.id), r.tournament_id]
+          );
+        } catch (innerErr) {
+          console.error('Failed to persist empty tournament record id', innerErr);
+        }
+      }
+      result.push(record);
+    }
+
+    res.json(result);
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'failed' });
@@ -154,15 +172,18 @@ app.post('/api/tournaments', async (req, res) => {
     const tournamentName = `Torneo ${gameKey} Edición ${record.edition || 1}`;
     const startDate = record.date ? record.date.slice(0, 10) : null;
 
+    const recordId = String(record.id ?? `tournament-${Date.now()}-${Math.random().toString(16).slice(2, 8)}`);
+    const persistedRecord = { ...record, id: recordId };
+
     const tournamentRes = await pool.query(
       'INSERT INTO tournaments(game_id, name, start_date) VALUES($1, $2, $3) RETURNING id',
       [gameId, tournamentName, startDate]
     );
     const tournamentId = tournamentRes.rows[0].id;
 
-    await pool.query('INSERT INTO tournament_records(tournament_id, record) VALUES($1, $2)', [tournamentId, record]);
+    await pool.query('INSERT INTO tournament_records(tournament_id, record) VALUES($1, $2)', [tournamentId, persistedRecord]);
 
-    const names = record.participants;
+    const names = persistedRecord.participants;
     const { rows: existingPlayers } = await pool.query('SELECT id, name FROM players WHERE name = ANY($1)', [names]);
     const playerMap = new Map(existingPlayers.map((row) => [row.name, row.id]));
     for (const playerName of names) {
@@ -175,7 +196,7 @@ app.post('/api/tournaments', async (req, res) => {
       }
     }
 
-    const stats = record.playerStats || {};
+    const stats = persistedRecord.playerStats || {};
     for (const playerName of names) {
       const playerId = playerMap.get(playerName);
       if (!playerId) continue;
@@ -188,7 +209,7 @@ app.post('/api/tournaments', async (req, res) => {
           playerId,
           tournamentId,
           gameId,
-          record.edition ? String(record.edition) : null,
+          persistedRecord.edition ? String(persistedRecord.edition) : null,
           playerStat.w ?? 0,
           playerStat.l ?? 0,
           playerStat.kills ?? 0,
@@ -197,14 +218,14 @@ app.post('/api/tournaments', async (req, res) => {
           playerStat.blocks ?? 0,
           playerStat.assists ?? 0,
           playerStat.mvps ?? 0,
-          record.champion === playerName ? 1 : 0,
+          persistedRecord.champion === playerName ? 1 : 0,
           1,
           playerStat,
         ]
       );
     }
 
-    res.status(201).json({ ...record, id: tournamentId });
+    res.status(201).json(persistedRecord);
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'failed' });
@@ -229,11 +250,21 @@ app.put('/api/tournaments/:id', async (req, res) => {
   }
 
   try {
-    const tournamentRes = await pool.query(
+    let tournamentId = null;
+    let tournamentRes = await pool.query(
       'SELECT tournament_id FROM tournament_records WHERE record->>\'id\' = $1 LIMIT 1',
       [id]
     );
-    const tournamentId = tournamentRes.rows[0]?.tournament_id;
+    if (tournamentRes.rows.length) {
+      tournamentId = tournamentRes.rows[0].tournament_id;
+    } else {
+      const parsedId = Number(id);
+      if (Number.isInteger(parsedId)) {
+        const numericRes = await pool.query('SELECT id FROM tournaments WHERE id = $1 LIMIT 1', [parsedId]);
+        if (numericRes.rows.length) tournamentId = numericRes.rows[0].id;
+      }
+    }
+
     if (!tournamentId) return res.status(404).json({ error: 'not found' });
 
     const updatedRecord = { ...record, id };

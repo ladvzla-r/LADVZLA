@@ -1313,6 +1313,7 @@ function HistorialView({ tournaments, history, onBack, onDeleteTournament, onUpd
   const [adminPin, setAdminPin] = useState("");
   const [adminPinError, setAdminPinError] = useState(false);
   const [editingRecordId, setEditingRecordId] = useState<string | null>(null);
+  const [confirmDeleteTournamentId, setConfirmDeleteTournamentId] = useState<string | null>(null);
   const [editChampion, setEditChampion] = useState("");
   const [editRunnerUp, setEditRunnerUp] = useState("");
   const [editMvp, setEditMvp] = useState<string | null>(null);
@@ -1506,9 +1507,23 @@ function HistorialView({ tournaments, history, onBack, onDeleteTournament, onUpd
                                   <button onClick={() => startEditingRecord(recordId, record)} className="rounded-full px-3 py-2 text-[11px] font-semibold" style={{ background: "rgba(99,102,241,0.15)", color: "#c7d2fe", fontFamily: "JetBrains Mono,monospace", border: "1px solid rgba(99,102,241,0.2)" }}>
                                     Editar
                                   </button>
+                                  <button onClick={() => setConfirmDeleteTournamentId(recordId)} className="rounded-full px-3 py-2 text-[11px] font-semibold" style={{ background: "rgba(255,77,109,0.15)", color: "#ff8fa3", fontFamily: "JetBrains Mono,monospace", border: "1px solid rgba(255,77,109,0.2)" }}>
+                                    Eliminar
+                                  </button>
                                 </>
                               )}
                             </div>
+                            {confirmDeleteTournamentId === recordId && (
+                              <div className="mt-3 flex flex-wrap gap-2 justify-end">
+                                <p className="text-xs" style={{ color: "#ff8fa3", fontFamily: "JetBrains Mono,monospace" }}>Confirma la eliminación del torneo.</p>
+                                <button onClick={() => { onDeleteTournament(recordId); setConfirmDeleteTournamentId(null); }} className="rounded-full px-3 py-2 text-[11px] font-semibold" style={{ background: "rgba(255,77,109,0.18)", color: "#ff8fa3", fontFamily: "JetBrains Mono,monospace", border: "1px solid rgba(255,77,109,0.25)" }}>
+                                  Confirmar
+                                </button>
+                                <button onClick={() => setConfirmDeleteTournamentId(null)} className="rounded-full px-3 py-2 text-[11px] font-semibold" style={{ background: "rgba(255,255,255,0.06)", color: "#a0a0b8", fontFamily: "JetBrains Mono,monospace", border: "1px solid rgba(255,255,255,0.1)" }}>
+                                  Cancelar
+                                </button>
+                              </div>
+                            )}
                           </div>
                         </div>
 
@@ -2573,6 +2588,18 @@ const ADMIN_PINS: Record<string, string> = {
   "2303": "Juan",
   "1423": "AlfredPWRX",
 };
+
+function getAdminHeaders() {
+  if (typeof window === "undefined") return null;
+  const savedAdminName = window.localStorage.getItem(ADMIN_SESSION_KEY);
+  if (!savedAdminName) return null;
+  const adminPin = Object.entries(ADMIN_PINS).find(([, name]) => name === savedAdminName)?.[0];
+  if (!adminPin) return null;
+  return {
+    'x-admin-username': savedAdminName,
+    'x-admin-password': adminPin,
+  };
+}
 
 function AdminView({ players, onPlayers, onDeletePlayer, onBack }: { players: Player[]; onPlayers: (p: Player[]) => void; onDeletePlayer: (name: string) => void; onBack: () => void }) {
   const [pin, setPin] = useState("");
@@ -4238,14 +4265,18 @@ export default function App() {
 
   const handleDeleteTournament = async (id: string) => {
     try {
-      const res = await fetch(`${API_BASE}/api/tournaments/${encodeURIComponent(id)}`, { method: 'DELETE' });
+      const headers = getAdminHeaders() ?? {};
+      const res = await fetch(`${API_BASE}/api/tournaments/${encodeURIComponent(id)}`, { method: 'DELETE', headers });
       if (!res.ok) {
         throw new Error('delete failed');
       }
       setTournamentHistory((prev) => prev.filter((record) => record.id !== id));
+      return;
     } catch (err) {
       console.error('Failed to delete tournament from API', err);
     }
+
+    setTournamentHistory((prev) => prev.filter((record) => record.id !== id));
   };
 
   const handleUpdateTournament = async (updatedRecord: TournamentRecord) => {
@@ -4254,9 +4285,10 @@ export default function App() {
     const nextMvp = updatedRecord.mvp ?? null;
 
     try {
+      const headers = { 'Content-Type': 'application/json', ...(getAdminHeaders() ?? {}) };
       const res = await fetch(`${API_BASE}/api/tournaments/${encodeURIComponent(updatedRecord.id ?? "")}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify(updatedRecord),
       });
       if (res.ok) {
