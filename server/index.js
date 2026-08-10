@@ -109,26 +109,35 @@ app.delete('/api/players', async (req, res) => {
 app.get('/api/tournaments', async (req, res) => {
   try {
     const { rows } = await pool.query(
-      `SELECT tr.record, t.id AS tournament_id
+      `SELECT tr.record, t.id AS tournament_id, g.key_name AS game_key
        FROM tournament_records tr
        JOIN tournaments t ON tr.tournament_id = t.id
+       JOIN games g ON t.game_id = g.id
        ORDER BY tr.stored_at DESC`
     );
 
     const result = [];
     for (const r of rows) {
-      const record = { ...r.record };
+      const record = { ...r.record, gameId: r.game_key };
+      let needsUpdate = false;
+
       if (!record.id) {
         record.id = `tournament-${r.tournament_id}`;
+        needsUpdate = true;
+      }
+
+      if (!r.record.gameId || r.record.gameId !== r.game_key) {
+        needsUpdate = true;
+      }
+
+      if (needsUpdate) {
         try {
-          await pool.query(
-            `UPDATE tournament_records SET record = jsonb_set(record, '{id}', $1::jsonb) WHERE tournament_id = $2`,
-            [JSON.stringify(record.id), r.tournament_id]
-          );
+          await pool.query('UPDATE tournament_records SET record = $1 WHERE tournament_id = $2', [record, r.tournament_id]);
         } catch (innerErr) {
-          console.error('Failed to persist empty tournament record id', innerErr);
+          console.error('Failed to persist normalized tournament record', innerErr);
         }
       }
+
       result.push(record);
     }
 
