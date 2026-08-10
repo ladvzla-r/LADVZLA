@@ -2571,6 +2571,7 @@ function ReglasView({ onBack }: { onBack: () => void }) {
 const ADMIN_PINS: Record<string, string> = {
   "1325": "Rikardo",
   "2303": "Juan",
+  "1423": "AlfredPWRX",
 };
 
 function AdminView({ players, onPlayers, onDeletePlayer, onBack }: { players: Player[]; onPlayers: (p: Player[]) => void; onDeletePlayer: (name: string) => void; onBack: () => void }) {
@@ -2763,7 +2764,7 @@ function AdminView({ players, onPlayers, onDeletePlayer, onBack }: { players: Pl
           ))}
         </div>
 
-        <p className="text-center text-xs" style={{ color: "#3a3a50", fontFamily: "JetBrains Mono,monospace" }}>PINs: Rikardo 1325 · Juan 2303</p>
+        <p className="text-center text-xs" style={{ color: "#3a3a50", fontFamily: "JetBrains Mono,monospace" }}>PINs: Rikardo 1325 · Juan 2303 · AlfredPWRX 1423</p>
       </div>
     </div>
   );
@@ -3537,6 +3538,7 @@ function TorneoView({ players, history, onBack, onSavePlayers, onSaveTournament 
     if (adminName) {
       setIsAdmin(true);
       setAdminPinError(false);
+      setManagedBy(adminName);
       setAdminPin("");
       if (typeof window !== "undefined") window.localStorage.setItem(ADMIN_SESSION_KEY, adminName);
     } else {
@@ -3758,7 +3760,6 @@ function TorneoView({ players, history, onBack, onSavePlayers, onSaveTournament 
     const saved = window.localStorage.getItem(ADMIN_SESSION_KEY);
     if (saved) {
       setManagedBy(saved);
-      setIsAdmin(true);
     }
   }, []);
 
