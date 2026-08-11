@@ -29,8 +29,8 @@ async function checkAdminCredentials(req) {
 
 app.get('/api/players', async (req, res) => {
   try {
-    const { rows } = await pool.query('SELECT id, name, photo_url FROM players ORDER BY name');
-    res.json(rows.map((r) => ({ id: r.id, name: r.name, avatar: r.photo_url })));
+    const { rows } = await pool.query('SELECT id, name, photo_url, stats_overrides FROM players ORDER BY name');
+    res.json(rows.map((r) => ({ id: r.id, name: r.name, avatar: r.photo_url, statsOverrides: r.stats_overrides || {} })));
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'failed' });
@@ -42,11 +42,12 @@ app.post('/api/players', async (req, res) => {
   if (!name || !name.trim()) return res.status(400).json({ error: 'name required' });
   try {
     const photoUrl = avatar && avatar.startsWith('data:') ? avatar : null;
-    const q = 'INSERT INTO players(name, nickname, photo_url) VALUES($1, $2, $3) RETURNING id, name, photo_url';
-    const vals = [name.trim(), name.trim(), photoUrl];
+    const statsOverrides = req.body.statsOverrides ?? req.body.stats_overrides ?? {};
+    const q = 'INSERT INTO players(name, nickname, photo_url, stats_overrides) VALUES($1, $2, $3, $4) RETURNING id, name, photo_url, stats_overrides';
+    const vals = [name.trim(), name.trim(), photoUrl, statsOverrides];
     const { rows } = await pool.query(q, vals);
     const r = rows[0];
-    res.status(201).json({ id: r.id, name: r.name, avatar: r.photo_url });
+    res.status(201).json({ id: r.id, name: r.name, avatar: r.photo_url, statsOverrides: r.stats_overrides || {} });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'failed' });
@@ -59,13 +60,20 @@ app.put('/api/players/:id', async (req, res) => {
   if (!name || !name.trim()) return res.status(400).json({ error: 'name required' });
   try {
     const photoUrl = avatar && avatar.startsWith('data:') ? avatar : null;
-    const { rows } = await pool.query(
-      'UPDATE players SET name = $1, photo_url = $2 WHERE id = $3 RETURNING id, name, photo_url',
-      [name.trim(), photoUrl, id],
-    );
+    const statsOverrides = req.body.statsOverrides ?? req.body.stats_overrides ?? null;
+    let query;
+    let params;
+    if (statsOverrides !== null) {
+      query = 'UPDATE players SET name = $1, photo_url = $2, stats_overrides = $3 WHERE id = $4 RETURNING id, name, photo_url, stats_overrides';
+      params = [name.trim(), photoUrl, statsOverrides, id];
+    } else {
+      query = 'UPDATE players SET name = $1, photo_url = $2 WHERE id = $3 RETURNING id, name, photo_url, stats_overrides';
+      params = [name.trim(), photoUrl, id];
+    }
+    const { rows } = await pool.query(query, params);
     if (!rows.length) return res.status(404).json({ error: 'not found' });
     const r = rows[0];
-    res.json({ id: r.id, name: r.name, avatar: r.photo_url });
+    res.json({ id: r.id, name: r.name, avatar: r.photo_url, statsOverrides: r.stats_overrides || {} });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'failed' });

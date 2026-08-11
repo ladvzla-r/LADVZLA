@@ -2130,7 +2130,27 @@ function JugadoresView({ players, history, onPlayers, onDeletePlayer, onBack }: 
       delete nextOverrides[statsGameId];
     }
 
+    // Update local state first
     onPlayers(players.map((player) => player.name === selected ? { ...player, statsOverrides: nextOverrides } : player));
+
+    // Persist to server if player has an id
+    (async () => {
+      if (currentPlayer.id) {
+        try {
+          const res = await fetch(`${API_BASE}/api/players/${currentPlayer.id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name: currentPlayer.name, avatar: currentPlayer.avatar, statsOverrides: nextOverrides }),
+          });
+          if (res.ok) {
+            const updated = await res.json();
+            onPlayers((prev) => prev.map((p) => p.id === updated.id ? { ...p, id: updated.id, avatar: updated.avatar ?? p.avatar, statsOverrides: updated.statsOverrides ?? {} } : p));
+          }
+        } catch (err) {
+          console.error('Failed to persist stats override', err);
+        }
+      }
+    })();
   };
 
   if (selected) {
@@ -2406,7 +2426,7 @@ function JugadoresView({ players, history, onPlayers, onDeletePlayer, onBack }: 
                       VER
                     </Ripple>
                     {isAdmin && (
-                      <Ripple onClick={() => { setEditing(player.name); setEditValue(player.name); }} color="rgba(163,230,53,0.15)"
+                      <Ripple onClick={() => { setEditing(player.name); setEditValue(player.name); setSelected(player.name); }} color="rgba(163,230,53,0.15)"
                         className="px-3 py-2 rounded-xl text-xs font-semibold"
                         style={{ background: "rgba(163,230,53,0.12)", border: "1px solid rgba(163,230,53,0.25)", color: "#bef264", fontFamily: "JetBrains Mono,monospace" }}>
                         EDITAR
