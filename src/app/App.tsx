@@ -1979,7 +1979,18 @@ function JugadoresView({ players, history, onPlayers, onDeletePlayer, onBack }: 
       { key: "participations", label: "Participaciones" },
       ...(selectedGame?.extraCols ?? []).map((col) => ({ key: col.key, label: col.label })),
     ];
-    setStatsForm(Object.fromEntries(fields.map((field) => [field.key, override?.[field.key]?.toString() ?? ""])));
+    // If there is no override for a field, fall back to the computed stats (history + seeds)
+    const computed = (buildGameStats(statsGameId, players, history) || []).find((r) => r.player === selected);
+    setStatsForm(Object.fromEntries(fields.map((field) => {
+      const ov = override?.[field.key];
+      if (typeof ov === 'number') return [field.key, String(ov)];
+      // Map form keys to computed stat keys
+      let computedValue: number | undefined = undefined;
+      if (field.key === 'wins') computedValue = computed?.w;
+      else if (field.key === 'losses') computedValue = computed?.l;
+      else computedValue = (computed as any)?.[field.key];
+      return [field.key, typeof computedValue === 'number' ? String(computedValue) : ""];
+    })));
   }, [selected, statsGameId, players]);
 
   const tryPin = () => {
