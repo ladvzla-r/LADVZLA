@@ -4219,6 +4219,14 @@ const PLAYER_STORAGE_KEY = "ladvzla_players";
 const TOURNAMENT_HISTORY_KEY = "ladvzla_tournament_history";
 const ADMIN_SESSION_KEY = "ladvzla_admin_session";
 
+function normalizeTournamentRecord(record: TournamentRecord): TournamentRecord {
+  return {
+    ...record,
+    id: record.id ?? `${record.gameId ?? "unknown"}-${record.date ?? new Date().toISOString()}-${(record.participants ?? []).join("|")}-${record.champion ?? "unknown"}`,
+    hidden: record.hidden ?? false,
+  };
+}
+
 function mergePlayersWithPersisted(serverPlayers: Player[], persistedPlayers: Player[]): Player[] {
   const persistedByName = new Map(persistedPlayers.map((player) => [player.name.toLowerCase(), player]));
   const persistedById = new Map(
@@ -4260,47 +4268,38 @@ function mergePlayersWithPersisted(serverPlayers: Player[], persistedPlayers: Pl
 
 function mergeTournamentsWithPersisted(apiHistory: TournamentRecord[], persistedHistory: TournamentRecord[]): TournamentRecord[] {
   const normalizeSignature = (record: TournamentRecord) => {
+    const normalized = normalizeTournamentRecord(record);
     return [
-      record.gameId ?? 'unknown',
-      record.date ?? 'unknown',
-      String(record.edition ?? 1),
-      record.champion ?? 'unknown',
-      record.mvp ?? 'unknown',
-      record.runnerUp ?? 'unknown',
+      normalized.gameId ?? 'unknown',
+      normalized.date ?? 'unknown',
+      String(normalized.edition ?? 1),
+      normalized.champion ?? 'unknown',
+      normalized.mvp ?? 'unknown',
+      normalized.runnerUp ?? 'unknown',
+      (normalized.participants ?? []).slice().sort().join(','),
     ].join('|');
   };
 
   const buildKey = (record: TournamentRecord) => {
-    if (record.id) return `id:${record.id}`;
-    return `sig:${normalizeSignature(record)}`;
+    const normalized = normalizeTournamentRecord(record);
+    if (normalized.id) return `id:${normalized.id}`;
+    return `sig:${normalizeSignature(normalized)}`;
   };
 
   const merged = new Map<string, TournamentRecord>();
 
-  for (const record of persistedHistory) {
+  for (const record of [...persistedHistory, ...apiHistory].map(normalizeTournamentRecord)) {
     const key = buildKey(record);
-    merged.set(key, { ...record });
-  }
-
-  for (const record of apiHistory) {
-    const apiKey = buildKey(record);
-    if (merged.has(apiKey)) {
-      const existing = merged.get(apiKey)!;
-      merged.set(apiKey, { ...existing, ...record, id: record.id ?? existing.id });
-      continue;
-    }
-
     const signatureKey = `sig:${normalizeSignature(record)}`;
-    if (merged.has(signatureKey)) {
-      const existing = merged.get(signatureKey)!;
-      merged.set(signatureKey, { ...existing, ...record, id: record.id ?? existing.id });
-      continue;
-    }
-
-    merged.set(apiKey, { ...record });
+    const existing = merged.get(key) ?? merged.get(signatureKey);
+    const mergedValue = existing ? { ...existing, ...record, id: record.id ?? existing.id } : { ...record };
+    merged.set(key, mergedValue);
+    merged.set(signatureKey, mergedValue);
   }
 
-  return Array.from(merged.values()).sort((a, b) => {
+  const result = Array.from(new Map(Array.from(merged.values()).map((record) => [buildKey(record), record])).values());
+
+  return result.sort((a, b) => {
     const editionA = Number(a.edition ?? 1);
     const editionB = Number(b.edition ?? 1);
     if (editionB !== editionA) return editionB - editionA;
